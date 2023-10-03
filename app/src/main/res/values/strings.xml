@@ -1,0 +1,73 @@
+<resources>
+
+    <string name="app_name">StealthNet</string>
+    <string name="share_link">https://play.google.com/store/apps/details?id=com.inapp.vpn</string>
+    <string name="term_link">https://indratech.in</string>
+    <string name="oneconnect_key">2HEYayMXV8TAcpSGvpBsGMN8UvcZtuGNSK.YGH2l.vSZ8.OKcP</string>
+    <bool name="ads_switch">true</bool>
+    <bool name="facebook_list_ads">false</bool>
+    <bool name="admob_list_ads">true</bool>
+    <!--vip subscription period prices-->
+    <string name="n1">MONTHLY</string>
+    <string name="n2">3 MONTHS</string>
+    <string name="n3">6 MONTHS</string>
+    <string name="n4">1 YEARL</string>
+    <string name="tech_one_month"> $1.99</string>
+    <string name="tech_three_months"> $3.99</string>
+    <string name="tech_six_months"> $6.99</string>
+    <string name="tech_twelve_months"> $12.99</string>
+    <!--vip subscription period prices-->
+    <string name="kBps">kB/s</string>
+    <string name="MBps">MB/s</string>
+    <string name="kbps">kb/s</string>
+    <string name="Mbps">Mb/s</string>
+    <string name="plus99">99+</string>
+    <string name="dash">-</string>
+    <string name="banner_ad_unit" translatable="false">ca-app-pub-3940256099942544/6300978111</string> <!--DEMO DATA -->
+    <string name="connecting">Connecting</string>
+    <string name="wait">Please wait</string>
+    <string name="auth">Authenticating</string>
+    <string name="recon">Reconnecting</string>
+    <string name="paused">Paused</string>
+    <string name="nonetwork">No Network</string>
+    <string name="disconnected">Not Connected</string>
+    <string name="connected">Connected</string>
+    <string name="assign_ip">Assigning IP</string>
+    <string name="config">Getting Configurations</string>
+
+    <string name="messages_header">Messages</string>
+    <string name="sync_header">Sync</string>
+
+    <!-- Messages Preferences -->
+    <string name="signature_title">Your signature</string>
+    <string name="reply_title">Default reply action</string>
+
+    <!-- Sync Preferences -->
+    <string name="sync_title">Sync email periodically</string>
+    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails
+    </string>
+    <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="smart_location">Smart Location</string>
+    <string name="connect">Connect</string>
+    <string name="neatherland">Neatherland</string>
+    <string name="disconnect_timer_initial">Disconnect</string>
+    <string name="details_splittunning">All apps run through encrypted VPN connection. If you\nwant to exclude any app, tap the button on the right.</string>
+    <string name="description_reminder">Only 10 minutes left on your free VPN session!\nUpgrade now for uninterrupted browsing.</string>
+    <string name="description_onboarding_screen">StealthNet VPN has always been committed to protecting your privacy and your data. The European Union’s General Data Protection Regulation has prompted us to review our policies and make sure that we are doing the right thing for all of our users worldwide.</string>
+    <string name="description_link_terms_and_condition">Please read and accept our</string>
+    <string name="name_app">StealthNet</string>
+</resources>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.xilli.stealthnet.Fragments.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_rateScreenFragment"
+            app:destination="@id/rateScreenFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_serverListFragment"
+            app:destination="@id/serverListFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_splitTunningFragment"
+            app:destination="@id/splitTunningFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_settingFragment"
+            app:destination="@id/settingFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_languageFragment"
+            app:destination="@id/languageFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/rateScreenFragment"
+        android:name="com.xilli.stealthnet.Fragments.RateScreenFragment"
+        android:label="RateScreenFragment"
+        tools:layout="@layout/fragment_rate_screen">
+        <action
+            android:id="@+id/action_rateScreenFragment_to_reportScreenFragment"
+            app:destination="@id/reportScreenFragment" />
+        <action
+            android:id="@+id/action_rateScreenFragment_to_serverListFragment"
+            app:destination="@id/serverListFragment" />
+        <action
+            android:id="@+id/action_rateScreenFragment_to_splitTunningFragment"
+            app:destination="@id/splitTunningFragment" />
+        <action
+            android:id="@+id/action_rateScreenFragment_to_splitTunningFragment2"
+            app:destination="@id/splitTunningFragment" />
+        <action
+            android:id="@+id/action_rateScreenFragment_to_settingFragment"
+            app:destination="@id/settingFragment" />
+        <action
+            android:id="@+id/action_rateScreenFragment_to_languageFragment"
+            app:destination="@id/languageFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/reportScreenFragment"
+        android:name="com.xilli.stealthnet.Fragments.ReportScreenFragment"
+        android:label="ReportScreenFragment"
+        tools:layout="@layout/fragment_report_screen">
+        <action
+            android:id="@+id/action_reportScreenFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+        <action
+            android:id="@+id/action_reportScreenFragment_to_serverListFragment"
+            app:destination="@id/serverListFragment" />
+        <action
+            android:id="@+id/action_reportScreenFragment_to_homeFragment2"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/serverListFragment"
+        android:name="com.xilli.stealthnet.Fragments.ServerListFragment"
+        android:label="ServerListFragment"
+        tools:layout="@layout/fragment_server_list">
+        <action
+            android:id="@+id/action_serverListFragment_to_rateScreenFragment"
+            app:destination="@id/rateScreenFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="com.xilli.stealthnet.Fragments.menu.SettingFragment"
+        android:label="fragment_setting"
+        tools:layout="@layout/fragment_setting" >
+        <action
+            android:id="@+id/action_settingFragment_to_languageFragment"
+            app:destination="@id/languageFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/languageFragment"
+        android:name="com.xilli.stealthnet.ui.menu.LanguageFragment"
+        android:label="fragment_language"
+        tools:layout="@layout/fragment_language" />
+    <fragment
+        android:id="@+id/splitTunningFragment"
+        android:name="com.xilli.stealthnet.ui.menu.SplitTunningFragment"
+        android:label="SplitTunningFragment"
+        tools:layout="@layout/fragment_split_tunning"/>
+    <fragment
+        android:id="@+id/onboardingScreenFragment"
+        android:name="com.xilli.stealthnet.Fragments.OnboardingScreenFragment"
+        android:label="fragment_onboarding_screen"
+        tools:layout="@layout/fragment_onboarding_screen" >
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+</navigation>

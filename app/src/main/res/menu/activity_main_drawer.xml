@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/settings_menu"
+            android:icon="@drawable/ic_setting"
+
+            android:title="Settings" />
+        <item
+            android:id="@+id/server_menu"
+            android:icon="@drawable/ic_server"
+
+            android:title="Server List" />
+        <item
+            android:id="@+id/split_menu"
+            android:icon="@drawable/ic_filter"
+
+            android:title="Split Tunning" />
+
+        <item
+            android:id="@+id/share_menu"
+            android:icon="@drawable/ic_share"
+
+            android:title="Share to friends" />
+
+        <item
+            android:id="@+id/rate_menu"
+            android:icon="@drawable/ic_rate"
+
+            android:title="Rate us" />
+        <item
+            android:id="@+id/privacy_menu"
+            android:icon="@drawable/ic_privacy"
+
+            android:title="Privacy policy" />
+
+        <item
+            android:id="@+id/terms_menu"
+            android:icon="@drawable/ic_certificate"
+
+            android:title="terms &amp; Condition"/>
+        <item
+            android:id="@+id/info_menu"
+            android:icon="@drawable/ic_info_circle"
+
+            android:title="About us"/>
+    </group>
+</menu>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#141414"
+    tools:context=".ui.menu.LanguageFragment">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout14"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.12"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/backfromLanguage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="20dp"
+            android:src="@drawable/ic_back"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Language"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/backfromLanguage"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/english"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent="0.11"
+        app:layout_constraintWidth_percent="0.45"
+        android:gravity="center"
+        android:text="English"
+        android:textSize="18sp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/selector_background_language"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toStartOf="@+id/Spanish"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/constraintLayout14" />
+
+    <TextView
+        android:id="@+id/Spanish"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent="0.11"
+        app:layout_constraintWidth_percent="0.45"
+        android:gravity="center"
+        android:background="@drawable/selector_background_language"
+        android:text="Española"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/english"
+        app:layout_constraintTop_toTopOf="@+id/english" />
+
+    <TextView
+        android:id="@+id/Korean"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent="0.11"
+        app:layout_constraintWidth_percent="0.44"
+        android:gravity="center"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/selector_background_language"
+        android:text="한국인"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/english"
+        app:layout_constraintStart_toStartOf="@+id/english"
+        app:layout_constraintTop_toBottomOf="@+id/english" />
+
+    <TextView
+        android:id="@+id/Portugal"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent="0.11"
+        app:layout_constraintWidth_percent="0.45"
+        android:gravity="center"
+        android:background="@drawable/selector_background_language"
+        android:text="Portugal"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/Spanish"
+        app:layout_constraintStart_toStartOf="@+id/Spanish"
+        app:layout_constraintTop_toTopOf="@+id/Korean" />
+
+    <TextView
+        android:id="@+id/Italian"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_percent="0.11"
+        app:layout_constraintWidth_percent="0.45"
+        android:gravity="center"
+        android:background="@drawable/selector_background_language"
+        android:text="Italiana"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/Korean"
+        app:layout_constraintStart_toStartOf="@+id/Korean"
+        app:layout_constraintTop_toBottomOf="@+id/Korean" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
