@@ -12,10 +12,9 @@ import com.bumptech.glide.Glide
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.model.Countries
 
-class SearchView_Premium_Adapter(
+class SearchView_Premium_Adapter(private val context: Context,
     private val dataList: List<Countries>
 ) : RecyclerView.Adapter<SearchView_Premium_Adapter.ViewHolder>() {
-    val context: Context?=null
     private var onItemClickListener: OnItemClickListener?=null
     private var selectedPosition: Int = RecyclerView.NO_POSITION
     var datalist = ArrayList<Countries>()
@@ -44,11 +43,11 @@ class SearchView_Premium_Adapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val data = dataList[position]
 
-        if (context != null) {
-            Glide.with(context)
-                .load(data.getFlagUrl1())
-                .into(holder.flagImageView)
-        }
+
+        Glide.with(context)
+            .load(data.getFlagUrl1())
+            .into(holder.flagImageView)
+
         holder.flagNameTextView.text = data.country
         holder.signalImageView.setImageResource(data.signal) // Use the signal property
         holder.crownImageView.setImageResource(data.crown)   // Use the crown property

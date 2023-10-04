@@ -16,11 +16,11 @@ import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.model.Countries
 
-class SearchView_Free_Adapter(private val dataList: List<Countries>, private val fragment: Fragment) :
+class SearchView_Free_Adapter(private val context: Context,private val dataList: List<Countries>) :
     RecyclerView.Adapter<SearchView_Free_Adapter.ViewHolder>() {
     private var onItemClickListener: ((Int) -> Unit)? = null
     private var selectedPosition: Int = RecyclerView.NO_POSITION
-    val context:Context?=null
+
     fun setSelectedPosition(position: Int) {
         selectedPosition = position
     }
@@ -39,11 +39,9 @@ class SearchView_Free_Adapter(private val dataList: List<Countries>, private val
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val data = dataList[position]
 
-        if (context != null) {
-            Glide.with(context)
-                .load(data.getFlagUrl1())
-                .into(holder.flagImageView)
-        }
+        Glide.with(context)
+            .load(data.getFlagUrl1())
+            .into(holder.flagImageView)
         holder.flagNameTextView.text = data.country
         holder.signalview.setImageResource(data.signal)
         holder.radioButton.isChecked = data.radiobutton
@@ -54,26 +52,13 @@ class SearchView_Free_Adapter(private val dataList: List<Countries>, private val
             else R.drawable.background_black_card
         )
         holder.constraintLayout.setOnClickListener {
-            context?.let { nonNullContext ->
-                val intent = Intent(nonNullContext, MainActivity::class.java)
-                intent.putExtra("c", data)
-                intent.putExtra("type", MainActivity.type)
-                intent.putExtra(
-                    "indratech_fast_27640849_ad_banner",
-                    MainActivity.indratech_fast_27640849_ad_banner_id
-                )
-                intent.putExtra("admob_interstitial", MainActivity.admob_interstitial_id)
-                intent.putExtra("fb_banner", MainActivity.indratech_fast_27640849_fb_native_id)
-                intent.putExtra(
-                    "indratech_fast_27640849_fb_interstitial",
-                    MainActivity.indratech_fast_27640849_fb_interstitial_id
-                )
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                nonNullContext.startActivity(intent)
-            }
+            val intent = Intent(context, MainActivity::class.java)
+            intent.putExtra("c", data)
+            intent.putExtra("type", MainActivity.type)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            context?.startActivity(intent)
         }
-
     }
 
     override fun getItemCount(): Int {
