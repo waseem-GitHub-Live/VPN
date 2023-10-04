@@ -13,10 +13,12 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity
+import com.xilli.stealthnet.Fragments.HomeFragment
+import com.xilli.stealthnet.Fragments.ServerListFragment
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.model.Countries
 
-class SearchView_Free_Adapter(private val context: Context,private val dataList: List<Countries>) :
+class SearchView_Free_Adapter(private val context: Context,private val dataList: List<Countries>,private val parentFragment: Fragment ) :
     RecyclerView.Adapter<SearchView_Free_Adapter.ViewHolder>() {
     private var onItemClickListener: ((Int) -> Unit)? = null
     private var selectedPosition: Int = RecyclerView.NO_POSITION
@@ -55,6 +57,8 @@ class SearchView_Free_Adapter(private val context: Context,private val dataList:
             val intent = Intent(context, MainActivity::class.java)
             intent.putExtra("c", data)
             intent.putExtra("type", MainActivity.type)
+            intent.putExtra("countryName", data.getCountry1())
+            intent.putExtra("flagUrl", data.getFlagUrl1())
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             context?.startActivity(intent)

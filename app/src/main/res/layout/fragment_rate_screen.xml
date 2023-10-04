@@ -45,7 +45,7 @@
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/crown"
+                    android:src="@drawable/crown1"
                     android:paddingHorizontal="15dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -163,12 +163,11 @@
                     android:id="@+id/flag_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingTop="20dp"
                     android:fontFamily="@font/urbanist_bold_700"
+                    android:paddingTop="30dp"
                     android:text="@string/neatherland"
                     android:textColor="@color/white"
                     android:textSize="20sp"
-                    app:layout_constraintBottom_toTopOf="@+id/vpn_ip"
                     app:layout_constraintStart_toEndOf="@+id/flagimageView"
                     app:layout_constraintTop_toTopOf="parent" />
 
@@ -347,15 +346,6 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
-
-            <TextView
-                android:id="@+id/datausage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="data"
-                android:textColor="@color/white"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
 
 
         </androidx.constraintlayout.widget.ConstraintLayout>

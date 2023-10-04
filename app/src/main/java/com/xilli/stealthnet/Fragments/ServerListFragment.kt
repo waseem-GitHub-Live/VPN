@@ -61,7 +61,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     private fun setupFreeRecyclerView() {
         recyclerView = binding?.recyclerview2 ?: return
         val freeserver = loadServers()
-        adapterFREE = SearchView_Free_Adapter(requireContext(), freeserver)
+        adapterFREE = SearchView_Free_Adapter(requireContext(), freeserver, this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapterFREE
         adapterFREE.setOnItemClickListener { position ->
@@ -143,19 +143,8 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("c", country)
         intent.putExtra("type", MainActivity.type)
-//        intent.putExtra(
-//            "indratech_fast_27640849_ad_banner",
-//            MainActivity.indratech_fast_27640849_ad_banner_id
-//        )
-//        intent.putExtra("admob_interstitial", MainActivity.admob_interstitial_id)
-//        intent.putExtra(
-//            "indratech_fast_27640849_fb_native",
-//            MainActivity.indratech_fast_27640849_fb_native_id
-//        )
-//        intent.putExtra(
-//            "indratech_fast_27640849_fb_interstitial",
-//            MainActivity.indratech_fast_27640849_fb_interstitial_id
-//        )
+        intent.putExtra("countryName", country.getCountry1())
+        intent.putExtra("flagUrl", country.getFlagUrl1())
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         context?.startActivity(intent)

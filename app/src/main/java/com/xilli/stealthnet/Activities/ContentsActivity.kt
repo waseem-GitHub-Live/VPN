@@ -34,6 +34,7 @@ import pl.droidsonroids.gif.GifImageView
 
 abstract class ContentsActivity : toolside() {
 
+
     private var mLastRxBytes: Long = 0
     private var mLastTxBytes: Long = 0
     private var mLastTime: Long = 0
@@ -67,7 +68,7 @@ abstract class ContentsActivity : toolside() {
     var ivConnectionStatusImage: ImageView? = null
     var ivVpnDetail: ImageView? = null
     var timerTextView: TextView? = null
-    var connectBtnTextView: ImageView? = null
+
     var connectionStateTextView: TextView? = null
     var rcvFree: RecyclerView? = null
     var footer: RelativeLayout? = null
@@ -94,34 +95,12 @@ abstract class ContentsActivity : toolside() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        textDownloading = findViewById(R.id.testD)
 
-        textUploading = findViewById(R.id.testU)
 
-        tvConnectionStatus = findViewById(R.id.connect)
-
-        connectBtnTextView = findViewById(R.id.imageView4)
-
+        connectionStateTextView = findViewById(R.id.connect)
         imgFlag = findViewById(R.id.flagimageView)
 
         flagName = findViewById(R.id.flag_name)
-
-        connectBtnTextView?.setOnClickListener {
-            btnConnectDisconnect()
-            if (MainActivity.selectedCountry != null) {
-                loadLottieAnimation()
-                val power =findViewById<ImageView>(R.id.power)
-                power.visibility = View.GONE
-                val lottieAnimationView =findViewById<LottieAnimationView>(R.id.lottieAnimationView)
-               lottieAnimationView?.visibility = View.VISIBLE
-
-                Handler().postDelayed({
-                    val navController = Navigation.findNavController(this, R.id.nav_host_fragment)
-                    val action = HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
-                    navController.navigate(action)
-                }, 3000)
-            }
-        }
 
 
         OneSignal.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE, OneSignal.LOG_LEVEL.NONE)
@@ -136,7 +115,7 @@ abstract class ContentsActivity : toolside() {
 
     }
 
-    private fun showIP() {
+    fun showIP() {
         val queue = Volley.newRequestQueue(this)
         val urlip = "https://checkip.amazonaws.com/"
 
@@ -178,7 +157,7 @@ abstract class ContentsActivity : toolside() {
             footer?.visibility = View.VISIBLE
         }
     }
-    private fun loadLottieAnimation() {
+    fun loadLottieAnimation() {
         val lottieAnimationView: LottieAnimationView = findViewById(R.id.lottieAnimationView)
         lottieAnimationView.setAnimation(R.raw.loading_animation)
 
@@ -220,122 +199,7 @@ abstract class ContentsActivity : toolside() {
 
     protected abstract fun checkRemainingTraffic()
 
-    protected fun updateUI(status:String) {
-        when (status) {
-            "CONNECTED" -> {
-                STATUS = "CONNECTED"
-                textDownloading?.visibility = View.VISIBLE
-                textUploading?.visibility = View.VISIBLE
-                gifImageView1?.setBackgroundResource(R.drawable.gif)
-                gifImageView2?.setBackgroundResource(R.drawable.gif)
-                connectBtnTextView?.isEnabled = true
-                connectionStateTextView?.setText(R.string.connected)
-                timerTextView?.visibility = View.GONE
-                hideConnectProgress()
-                showIP()
-                connectBtnTextView?.visibility = View.VISIBLE
-                tvConnectionStatus?.text = "Selected"
-                lottieAnimationView?.visibility = View.GONE
-                Toasty.success(this@ContentsActivity, "Server Connected", Toast.LENGTH_SHORT).show()
-            }
-            "AUTH" -> {
-                STATUS = "AUTHENTICATION"
-                connectBtnTextView?.visibility = View.VISIBLE
-                lottieAnimationView?.visibility = View.VISIBLE
 
-
-                connectionStateTextView?.setText(R.string.auth)
-                connectBtnTextView?.isEnabled = true
-                timerTextView?.visibility = View.GONE
-                Toasty.success(this@ContentsActivity, "Server AUTHENTICATION", Toast.LENGTH_SHORT).show()
-            }
-            "WAIT" -> {
-                STATUS = "WAITING"
-                connectBtnTextView?.visibility = View.VISIBLE
-                lottieAnimationView?.visibility = View.VISIBLE
-
-
-                connectionStateTextView?.setText(R.string.wait)
-                connectBtnTextView?.isEnabled = true
-                timerTextView?.visibility = View.GONE
-                Toasty.success(this@ContentsActivity, "Server AUTHENTICATION", Toast.LENGTH_SHORT).show()
-            }
-            "RECONNECTING" -> {
-                STATUS = "RECONNECTING"
-                connectBtnTextView?.visibility = View.VISIBLE
-                lottieAnimationView?.visibility = View.VISIBLE
-
-
-                connectionStateTextView?.setText(R.string.recon)
-                connectBtnTextView?.isEnabled = true
-                timerTextView?.visibility = View.GONE
-            }
-            "LOAD" -> {
-                STATUS = "LOAD"
-                connectBtnTextView?.visibility = View.VISIBLE
-                lottieAnimationView?.visibility = View.VISIBLE
-
-
-                connectionStateTextView?.setText(R.string.connecting)
-                connectBtnTextView?.isEnabled = true
-                timerTextView?.visibility = View.GONE
-            }
-            "ASSIGN_IP" -> {
-                STATUS = "LOAD"
-                connectBtnTextView?.visibility = View.VISIBLE
-                lottieAnimationView?.visibility = View.VISIBLE
-
-
-                connectionStateTextView?.setText(R.string.assign_ip)
-                connectBtnTextView?.isEnabled = true
-                timerTextView?.visibility = View.GONE
-            }
-            "GET_CONFIG" -> {
-                STATUS = "LOAD"
-                connectBtnTextView?.visibility = View.VISIBLE
-                lottieAnimationView?.visibility = View.VISIBLE
-
-
-                connectionStateTextView?.setText(R.string.config)
-                connectBtnTextView?.isEnabled = true
-                timerTextView?.visibility = View.GONE
-            }
-            "USERPAUSE" -> {
-                STATUS = "DISCONNECTED"
-                tvConnectionStatus?.text = "Not Selected"
-                ivConnectionStatusImage?.setImageResource(R.drawable.ic_dot)
-
-
-                tvConnectionStatus?.text = "Not Selected"
-                connectionStateTextView?.setText(R.string.paused)
-                ivConnectionStatusImage?.setImageResource(R.drawable.ic_dot)
-            }
-            "NONETWORK" -> {
-                STATUS = "DISCONNECTED"
-                tvConnectionStatus?.text = "Not Selected"
-                ivConnectionStatusImage?.setImageResource(R.drawable.ic_dot)
-                showIP()
-
-
-                tvConnectionStatus?.text = "Not Selected"
-                connectionStateTextView?.setText(R.string.nonetwork)
-                ivConnectionStatusImage?.setImageResource(R.drawable.ic_dot)
-            }
-            "DISCONNECTED" -> {
-                STATUS = "DISCONNECTED"
-                tvConnectionStatus?.text = "Not Selected"
-                ivConnectionStatusImage?.setImageResource(R.drawable.ic_dot)
-                timerTextView?.visibility = View.INVISIBLE
-                hideConnectProgress()
-                showIP()
-
-
-                tvConnectionStatus?.text = "Not Selected"
-                connectionStateTextView?.setText(R.string.disconnected)
-                ivConnectionStatusImage?.setImageResource(R.drawable.ic_dot)
-            }
-        }
-    }
 
     protected fun hideConnectProgress() {
         connectionStateTextView?.visibility = View.VISIBLE

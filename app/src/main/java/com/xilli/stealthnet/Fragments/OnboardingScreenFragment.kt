@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.navigation.fragment.findNavController
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.databinding.FragmentOnboardingScreenBinding
 
@@ -55,7 +56,8 @@ class OnboardingScreenFragment : Fragment() {
         }
         binding?.acceptandcontiue?.setOnClickListener {
             onboardingCompleted()
-
+            val action = OnboardingScreenFragmentDirections.actionOnboardingScreenFragmentToHomeFragment()
+            findNavController().navigate(action)
         }
     }
     private fun onboardingCompleted() {

@@ -8,19 +8,28 @@ import android.content.IntentFilter
 import android.content.IntentSender.SendIntentException
 import android.net.VpnService
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PersistableBundle
 import android.os.RemoteException
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.fragment.findNavController
+import com.airbnb.lottie.LottieAnimationView
+import com.airbnb.lottie.LottieDrawable
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.SkuType
 import com.android.billingclient.api.BillingClientStateListener
@@ -29,6 +38,9 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
+import com.android.volley.Request
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
 import com.facebook.ads.AdSettings
 import com.facebook.ads.AudienceNetworkAds
@@ -38,17 +50,36 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.tasks.OnSuccessListener
+import com.onesignal.OneSignal
 import com.xilli.stealthnet.Config
+import com.xilli.stealthnet.Fragments.HomeFragment
+import com.xilli.stealthnet.Fragments.HomeFragmentDirections
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
+import com.xilli.stealthnet.helper.Utils
+import com.xilli.stealthnet.helper.Utils.connectBtnTextView
+import com.xilli.stealthnet.helper.Utils.connectionStateTextView
+import com.xilli.stealthnet.helper.Utils.flagName
+import com.xilli.stealthnet.helper.Utils.imgFlag
+import com.xilli.stealthnet.helper.Utils.isConnected
+import com.xilli.stealthnet.helper.Utils.ivConnectionStatusImage
+import com.xilli.stealthnet.helper.Utils.lottieAnimationView
+import com.xilli.stealthnet.helper.Utils.textDownloading
+import com.xilli.stealthnet.helper.Utils.textUploading
+import com.xilli.stealthnet.helper.Utils.timerTextView
+import com.xilli.stealthnet.helper.Utils.tvConnectionStatus
+import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
+import es.dmoral.toasty.Toasty
+import kotlinx.android.synthetic.main.fragment_home.imageView4
 import top.oneconnectapi.app.OpenVpnApi
 import top.oneconnectapi.app.core.OpenVPNThread
+import java.net.NetworkInterface
 import java.util.Arrays
 import java.util.Locale
 import java.util.Objects
 
-class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClientStateListener {
+class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener {
     private val locale: Locale? = null
     private var isFirst = true
     private val vpnThread = OpenVPNThread()
@@ -62,6 +93,7 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
             Config.all_yearly_id
         )
     )
+    private var STATUS: String? = "DISCONNECTED"
 
     private fun connectToBillingService() {
         if (!billingClient!!.isReady) {
@@ -131,7 +163,7 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
             .setListener(this)
             .enablePendingPurchases()
             .build()
-//        MobileAds.initialize(this) { }
+
         connectToBillingService()
         val intent = intent
         if (getIntent().extras != null) {
@@ -140,7 +172,7 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
             if (!Utility.isOnline(applicationContext)) {
                 showMessage("No Internet Connection", "error")
             } else {
-                showInterstitialAndConnect()
+                showMessage("Vpn is preparing", "success")
             }
         } else {
             if (selectedCountry != null) {
@@ -149,6 +181,7 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
                     .load(selectedCountry!!.flagUrl)
                     .into(imgFlag!!)
                 flagName!!.text = selectedCountry!!.country
+
             }
         }
         if (intent.getStringExtra("type") != null) {
@@ -165,22 +198,41 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
             type = ""
             Log.v("AD_TYPE", " null")
         }
-//        if (type == "ad") {
-//            val requestBuilder = RequestConfiguration.Builder()
-//            MobileAds.setRequestConfiguration(requestBuilder.build())
-//        } else {
-//            AdSettings.setIntegrationErrorMode(AdSettings.IntegrationErrorMode.INTEGRATION_ERROR_CALLBACK_MODE)
-//            AudienceNetworkAds.initialize(this)
-//        }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
-        inAppUpdate()
-        val navController = Navigation.findNavController(this, R.id.nav_host_fragment)
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+    //    inAppUpdate()
+        val homeFragment = supportFragmentManager.findFragmentByTag("homeFragmentTag") as HomeFragment?
+//        homeFragment?.setConnectBtnClickListener()
+        connectBtnTextView?.setOnClickListener {
+        }
+//        OneSignal.initWithContext(this)
+//        OneSignal.setAppId("a2be7720-a32b-415a-9db1-d50fdc54f069")
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
+
+        // Check if onboarding is completed
+        val sharedPreferences = getSharedPreferences("onboarding", MODE_PRIVATE)
+        val onboardingCompleted = sharedPreferences.getBoolean("completed", false)
+
+        if (!onboardingCompleted) {
+            // Navigate to the OnboardingFragment
+            navController.navigate(R.id.onboardingScreenFragment)
+        } else {
+            // Navigate to the HomeFragment
+            navController.navigate(R.id.homeFragment)
+        }
+        val countryName: String? = intent.getStringExtra("countryName")
+        val flagUrl: String? = intent.getStringExtra("flagUrl")
+        Utils.countryName = countryName
+        Utils.flagUrl = flagUrl
     }
 
-    override fun disconnectFromVpn() {
+   fun disconnectFromVpn() {
         try {
             OpenVPNThread.stop()
             updateUI("DISCONNECTED")
@@ -188,10 +240,6 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
             e.printStackTrace()
         }
     }
-
-    override fun checkRemainingTraffic() {}
-    override val layoutRes: Int
-        protected get() = R.layout.activity_main
 
     private fun inAppUpdate() {
         val appUpdateManager = AppUpdateManagerFactory.create(this@MainActivity)
@@ -233,7 +281,7 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
         }
     }
 
-    public override fun prepareVpn() {
+    fun prepareVpn() {
         imgFlag?.let {
             Glide.with(this)
                 .load(selectedCountry?.flagUrl)
@@ -255,20 +303,26 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
         }
     }
 
-    protected fun startVpn() {
+    fun startVpn() {
         try {
-            ActiveServer.saveServer(selectedCountry, this@MainActivity)
-            OpenVpnApi.startVpn(
-                this,
-                selectedCountry?.ovpn,
-                selectedCountry?.country,
-                selectedCountry?.ovpnUserName,
-                selectedCountry?.ovpnUserPassword
-            )
+            if (selectedCountry != null) {
+                ActiveServer.saveServer(selectedCountry!!, this@MainActivity)
+                OpenVpnApi.startVpn(
+                    this,
+                    selectedCountry?.ovpn,
+                    selectedCountry?.country,
+                    selectedCountry?.ovpnUserName,
+                    selectedCountry?.ovpnUserPassword
+                )
+
+            } else {
+                Toast.makeText(this, "No country selected", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: RemoteException) {
             e.printStackTrace()
         }
     }
+
 
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -286,6 +340,8 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
                     }
                     isFirst = false
                 }
+                isConnected = true
+                showMessage("Now u can click", "success")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -305,17 +361,19 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
         }
     }
 
-    public override fun checkSelectedCountry() {
+   fun checkSelectedCountry() {
         if (selectedCountry == null) {
             updateUI("DISCONNECT")
             showMessage("Please select a server first", "")
         } else {
-            showInterstitialAndConnect()
+            prepareVpn()
             updateUI("LOAD")
         }
     }
 
     companion object {
+
+
         var indratech_toto_27640849_fb_reward_id: String? = null
         var indratech_toto_27640849_admob_reward: String? = null
         @JvmField
@@ -338,4 +396,110 @@ class MainActivity : ContentsActivity(), PurchasesUpdatedListener, BillingClient
         @JvmField
         var indratech_fast_27640849_all_ads_on_off = false
     }
+
+
+
+    fun loadLottieAnimation() {
+        val lottieAnimationView: LottieAnimationView = findViewById(R.id.lottieAnimationView)
+        lottieAnimationView.setAnimation(R.raw.loading_animation)
+
+        val lottieAnimationView2: LottieAnimationView = findViewById(R.id.lottieAnimationView2)
+        lottieAnimationView2.setAnimation(R.raw.backview)
+        lottieAnimationView2.repeatCount = LottieDrawable.INFINITE
+
+        lottieAnimationView.addAnimatorUpdateListener {
+            // Update listener logic here
+        }
+
+        lottieAnimationView2.addAnimatorUpdateListener {
+            // Update listener logic here
+        }
+
+        lottieAnimationView.playAnimation()
+        lottieAnimationView2.playAnimation()
+    }
+
+    private val mUIHandler = Handler(Looper.getMainLooper())
+    val mUIUpdateRunnable: Runnable = object : Runnable {
+        override fun run() {
+            checkRemainingTraffic()
+            mUIHandler.postDelayed(this, 10000)
+        }
+    }
+
+    fun btnConnectDisconnect() {
+        if (Utils.STATUS != "DISCONNECTED") {
+            showMessage("Wait","success")
+        } else {
+            if (!Utility.isOnline(applicationContext)) {
+                showMessage("No Internet Connection", "error")
+            } else {
+                checkSelectedCountry()
+            }
+        }
+    }
+
+    fun checkRemainingTraffic() {}
+
+
+
+    fun disconnectAlert() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Do you want to disconnect?")
+        builder.setPositiveButton(
+            "Disconnect"
+        ) { _, _ ->
+            disconnectFromVpn()
+            Utils.STATUS = "DISCONNECTED"
+
+            textDownloading?.text = "0.0 kB/s"
+            textUploading?.text = "0.0 kB/s"
+
+            showMessage("Server Disconnected", "success")
+        }
+        builder.setNegativeButton(
+            "Cancel"
+        ) { _, _ ->
+            showMessage("VPN Remains Connected", "success")
+        }
+        builder.show()
+    }
+
+    fun showMessage(msg: String?, type: String) {
+
+        if (type == "success") {
+            Toasty.success(
+                this,
+                msg + "",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else if (type == "error") {
+            Toasty.error(
+                this,
+                msg + "",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            Toasty.normal(
+                this,
+                msg + "",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    fun updateConnectionStatus(
+        duration: String?,
+        lastPacketReceive: String?,
+        byteIn: String,
+        byteOut: String
+    ) {
+        val byteinKb = byteIn.split("-").toTypedArray()[1]
+        val byteoutKb = byteOut.split("-").toTypedArray()[1]
+
+        textDownloading?.text = byteinKb
+        textUploading?.text = byteoutKb
+        timerTextView?.text = duration
+    }
+
 }

@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
@@ -21,11 +22,17 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
+import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentRateScreenBinding
+import com.xilli.stealthnet.helper.Utils
+import com.xilli.stealthnet.helper.Utils.showIP
+import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
+import top.oneconnectapi.app.core.OpenVPNThread
 import kotlin.math.abs
 
 
@@ -45,8 +52,8 @@ class RateScreenFragment : Fragment(){
     private val handler = Handler(Looper.getMainLooper())
     var selectedCountry: Countries? = null
     private var isFirst = true
-//    val countryName = Utility.countryName
-//    val flagUrl = Utility.flagUrl
+    val countryName = Utils.countryName
+    val flagUrl = Utils.flagUrl
     companion object {
         var type = ""
         val activeServer = ActiveServer()
@@ -76,40 +83,39 @@ class RateScreenFragment : Fragment(){
         setupBackPressedCallback()
         startRunnable()
         updateTrafficStats()
-//        datasheet()
-//        binding?.vpnIp?.let { showIP(it) }
+        datasheet()
+        binding?.vpnIp?.let { showIP(requireContext(),it) }
         terraformed()
 
     }
 
     private fun terraformed() {
-        startTimeMillis = System.currentTimeMillis()
+        viewModel?.startTimer()
         mHandler.post(object : Runnable {
             override fun run() {
-                val elapsedTimeMillis = System.currentTimeMillis() - startTimeMillis
-                val elapsedTimeFormatted = formatElapsedTime(elapsedTimeMillis)
+                val elapsedTimeMillis = viewModel?.getElapsedTime()
+                val elapsedTimeFormatted = elapsedTimeMillis?.let { formatElapsedTime(it) }
                 binding?.timeline?.text = elapsedTimeFormatted
                 mHandler.postDelayed(this, 1000)
             }
         })
     }
-
     private fun formatElapsedTime(elapsedTimeMillis: Long): String {
         val seconds = (elapsedTimeMillis / 1000) % 60
         val minutes = (elapsedTimeMillis / (1000 * 60)) % 60
         val hours = (elapsedTimeMillis / (1000 * 60 * 60)) % 24
         return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
-//    private fun datasheet() {
-//        if (countryName != null && flagUrl != null) {
-//            binding?.flagimageView?.let {
-//                Glide.with(this)
-//                    .load(flagUrl)
-//                    .into(it)
-//            }
-//            binding?.flagName?.text = countryName
-//        }
-//    }
+    private fun datasheet() {
+        if (countryName != null && flagUrl != null) {
+            binding?.flagimageView?.let {
+                Glide.with(this)
+                    .load(flagUrl)
+                    .into(it)
+            }
+            binding?.flagName?.text = countryName
+        }
+    }
     override fun onResume() {
         super.onResume()
 
@@ -122,7 +128,7 @@ class RateScreenFragment : Fragment(){
     }
     private fun updateTrafficStats() {
         val totalDataUsage = calculateTotalDataUsage()
-        binding?.datausage?.text = totalDataUsage
+
         viewModel?.totalDataUsage1 = totalDataUsage
 
         val resetDownload = TrafficStats.getTotalRxBytes()
@@ -277,9 +283,10 @@ class RateScreenFragment : Fragment(){
             override fun onFinish() {
                 disconnectTextView.setOnClickListener {
                     val bundle = Bundle()
+                    viewModel?.stopTimer()
                     bundle.putString("elapsedTime", binding?.timeline?.text.toString())
                     findNavController().navigate(R.id.reportScreenFragment, bundle)
-//                    disconnectFromVpn()
+                    disconnectFromVpn()
                     dialog.dismiss()
                 }
                 disconnectTextView.background = originalDisconnectBackground
@@ -290,15 +297,15 @@ class RateScreenFragment : Fragment(){
 
         countDownTimer?.start()
     }
-//    fun disconnectFromVpn() {
-//        try {
-//            OpenVPNThread.stop()
-//            updateUI("DISCONNECTED")
-//            Toast.makeText(context, "vpn Disconnected", Toast.LENGTH_SHORT).show()
-//        } catch (e: java.lang.Exception) {
-//            e.printStackTrace()
-//        }
-//    }
+    fun disconnectFromVpn() {
+        try {
+            OpenVPNThread.stop()
+            updateUI("DISCONNECTED")
+            Toast.makeText(context, "vpn Disconnected", Toast.LENGTH_SHORT).show()
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+    }
     private val mRunnable: Runnable = object : Runnable {
         override fun run() {
             updateTrafficStats()

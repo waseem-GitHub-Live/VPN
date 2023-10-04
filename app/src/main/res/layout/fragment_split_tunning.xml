@@ -112,6 +112,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintWidth_percent="0.91" />
             <Switch
+                android:id="@+id/chromeS"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:track="@drawable/checked_switch"
@@ -165,6 +166,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintWidth_percent="0.91" />
             <Switch
+                android:id="@+id/youtubeS"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:track="@drawable/checked_switch"
@@ -218,6 +220,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintWidth_percent="0.91" />
             <Switch
+                android:id="@+id/facebookS"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:track="@drawable/checked_switch"
@@ -270,6 +273,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintWidth_percent="0.91" />
             <Switch
+                android:id="@+id/whattsappS"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:track="@drawable/checked_switch"
