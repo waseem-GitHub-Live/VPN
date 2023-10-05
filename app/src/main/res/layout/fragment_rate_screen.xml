@@ -164,8 +164,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/urbanist_bold_700"
-                    android:paddingTop="30dp"
+                    android:paddingTop="20dp"
                     android:text="@string/neatherland"
+                    android:gravity="center"
                     android:textColor="@color/white"
                     android:textSize="20sp"
                     app:layout_constraintStart_toEndOf="@+id/flagimageView"
@@ -358,6 +359,7 @@
             android:background="@color/black"
             app:headerLayout="@layout/header_menu"
             app:itemIconTint="@color/white"
+
             app:itemTextAppearance="@style/NavigationMenuItem"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintHeight_percent="0.75"

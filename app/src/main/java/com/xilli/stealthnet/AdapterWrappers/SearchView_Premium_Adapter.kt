@@ -13,8 +13,9 @@ import com.xilli.stealthnet.R
 import com.xilli.stealthnet.model.Countries
 
 class SearchView_Premium_Adapter(private val context: Context,
-    private val dataList: List<Countries>
-) : RecyclerView.Adapter<SearchView_Premium_Adapter.ViewHolder>() {
+    private var dataList: List<Countries>
+) : RecyclerView.Adapter<SearchView_Premium_Adapter.ViewHolder>()
+{
     private var onItemClickListener: OnItemClickListener?=null
     private var selectedPosition: Int = RecyclerView.NO_POSITION
     var datalist = ArrayList<Countries>()
@@ -67,6 +68,11 @@ class SearchView_Premium_Adapter(private val context: Context,
 
     override fun getItemCount(): Int {
         return dataList.size
+    }
+
+    fun submitList(filteredPremiumServers: List<Countries>) {
+        dataList = filteredPremiumServers
+        notifyDataSetChanged()
     }
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

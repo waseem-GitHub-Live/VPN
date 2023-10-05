@@ -3,6 +3,7 @@ package com.xilli.stealthnet.ui.viewmodels
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.xilli.stealthnet.model.Countries
 
 class SharedViewmodel : ViewModel() {
     private val averageRxSpeedLiveData = MutableLiveData<String>()
@@ -45,4 +46,10 @@ class SharedViewmodel : ViewModel() {
             0L
         }
     }
+    var isSwitchChecked = MutableLiveData<Boolean>()
+    var isSwitchCheckedauto = MutableLiveData<Boolean>()
+    var isSwitchCheckedimprove = MutableLiveData<Boolean>()
+    var isSwitchCheckedsavedata = MutableLiveData<Boolean>()
+
+    val selectedItem: MutableLiveData<Countries> = MutableLiveData()
 }

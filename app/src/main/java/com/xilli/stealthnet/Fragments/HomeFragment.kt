@@ -22,6 +22,7 @@ import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieDrawable
 import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.Activities.MainActivity.Companion.selectedCountry
+import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentHomeBinding
@@ -80,41 +81,69 @@ class HomeFragment : Fragment() {
 
     fun setConnectBtnClickListener() {
         binding?.imageView4?.setOnClickListener {
-            if (selectedCountry != null && !isVpnConnected(requireContext())) {
+            if (!Utility.isOnline(requireContext())) {
+                noconnectionD()
                 val mainActivity = activity as? MainActivity
-                mainActivity?.showMessage("VPN is Connecting WAIT", "success")
-
-                val intent = VpnService.prepare(requireContext())
-                if (intent != null) {
-                    val VPN_PERMISSION_REQUEST_CODE = 123
-                    startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
-                } else {
-
-                    mainActivity?.prepareVpn()
-                    mainActivity?.btnConnectDisconnect()
-                    loadLottieAnimation()
-                    binding?.connect?.text = "Loading...."
-                    binding?.power?.visibility = View.GONE
-                    binding?.lottieAnimationView?.visibility = View.VISIBLE
-
-                    // Use a coroutine to delay the navigation
-                    lifecycleScope.launch {
-                        delay(8000) // Delay for 8 seconds
-                        binding?.connect?.text = "Connected"
-                        val navController = Navigation.findNavController(
-                            requireActivity(),
-                            R.id.nav_host_fragment
-                        )
-                        val action = HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
-                        navController.navigate(action)
-                    }
-                }
+                mainActivity?.showMessage("Connect to internet and start again", "error")
             } else {
-                val mainActivity = activity as? MainActivity
-                mainActivity?.showMessage("Select a server first", "error")
+                if (selectedCountry != null && !isVpnConnected(requireContext())) {
+                    val mainActivity = activity as? MainActivity
+                    mainActivity?.showMessage("VPN is Connecting WAIT", "success")
+
+                    val intent = VpnService.prepare(requireContext())
+                    if (intent != null) {
+                        val VPN_PERMISSION_REQUEST_CODE = 123
+                        startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
+                    } else {
+
+                        mainActivity?.prepareVpn()
+                        mainActivity?.btnConnectDisconnect()
+                        loadLottieAnimation()
+                        binding?.connect?.text = "Loading...."
+                        binding?.power?.visibility = View.GONE
+                        binding?.lottieAnimationView?.visibility = View.VISIBLE
+
+                        // Use a coroutine to delay the navigation
+                        lifecycleScope.launch {
+                            delay(8000) // Delay for 8 seconds
+                            binding?.connect?.text = "Connected"
+                            val navController = Navigation.findNavController(
+                                requireActivity(),
+                                R.id.nav_host_fragment
+                            )
+                            val action =
+                                HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
+                            navController.navigate(action)
+                        }
+                    }
+                } else {
+                    val mainActivity = activity as? MainActivity
+                    mainActivity?.showMessage("Select a server first", "error")
+                }
             }
         }
 
+    }
+    private fun noconnectionD() {
+        val alertDialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_vpn_connection, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+
+        alertDialogBuilder.setView(alertDialogView)
+
+        val cancelButton = alertDialogView.findViewById<TextView>(R.id.Ok)
+
+        val alertDialog = alertDialogBuilder.create()
+        cancelButton.setOnClickListener {
+
+            alertDialog.dismiss()
+        }
+
+        val dialogWindow = alertDialog.window
+        dialogWindow?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        alertDialog.show()
     }
     override fun onResume() {
         super.onResume()
@@ -202,4 +231,6 @@ class HomeFragment : Fragment() {
             true
         }
     }
+
+
 }

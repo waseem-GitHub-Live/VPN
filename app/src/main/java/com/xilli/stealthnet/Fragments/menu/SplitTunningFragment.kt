@@ -1,21 +1,20 @@
-package com.xilli.stealthnet.ui.menu
+package com.xilli.stealthnet.Fragments.menu
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
-import com.xilli.stealthnet.R
-import com.xilli.stealthnet.databinding.FragmentSettingBinding
 import com.xilli.stealthnet.databinding.FragmentSplitTunningBinding
 import com.xilli.stealthnet.helper.Utils.getSharedPreferences
 
 
 class SplitTunningFragment : Fragment() {
     private var binding:FragmentSplitTunningBinding?=null
-    val sharedPref = getSharedPreferences("SplitTunnelingPrefs", Context.MODE_PRIVATE)
+    private lateinit var sharedPrefs: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -23,6 +22,7 @@ class SplitTunningFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         binding = FragmentSplitTunningBinding.inflate(inflater, container, false)
+        sharedPrefs = requireContext().getSharedPreferences("SplitTunnelingPrefs", Context.MODE_PRIVATE)
         return binding?.root
     }
 
@@ -58,12 +58,12 @@ class SplitTunningFragment : Fragment() {
     }
 
     fun setSplitTunnelingPreference(appName: String, isEnabled: Boolean) {
-        val editor = sharedPref.edit()
+        val editor = sharedPrefs.edit()
         editor.putBoolean(appName, isEnabled)
         editor.apply()
     }
 
     fun getSplitTunnelingPreference(appName: String): Boolean {
-        return sharedPref.getBoolean(appName, false)
+        return sharedPrefs.getBoolean(appName, false)
     }
 }

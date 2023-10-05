@@ -4,6 +4,7 @@ import android.os.Parcel
 import android.os.Parcelable
 
 class Countries : Parcelable {
+    var type: Int = 0
     var country: String? = null
     var flagUrl: String? = null
     var ovpn: String? = null

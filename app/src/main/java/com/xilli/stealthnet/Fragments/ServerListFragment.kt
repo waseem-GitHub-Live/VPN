@@ -1,20 +1,27 @@
 package com.xilli.stealthnet.Fragments
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.AdapterWrappers.SearchView_Free_Adapter
 import com.xilli.stealthnet.AdapterWrappers.SearchView_Premium_Adapter
+import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.Constants
 import com.xilli.stealthnet.databinding.FragmentServerListBinding
 import com.xilli.stealthnet.model.Countries
+import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -28,7 +35,9 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     private var isBackgroundChanged = false
     private var selectedPosition = RecyclerView.NO_POSITION
     private var fragment: Fragment?= null
-
+    val viewModel: SharedViewmodel by viewModels()
+    val premiumServers: List<Countries> by lazy { loadServersvip() }
+    val freeServers: List<Countries> by lazy { loadServers() }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,10 +53,47 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         setupFreeRecyclerView()
         setupPremiumRecyclerView()
         clicklistner()
-//        binding?.constraintLayout2?.performClick()
+        searchview()
+        val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val selectedCountryName = sharedPrefs.getString("selectedCountryName", null)
+        val selectedCountryFlagUrl = sharedPrefs.getString("selectedCountryFlagUrl", null)
 
+        if (selectedCountryName != null && selectedCountryFlagUrl != null) {
+            val selectedItem = Countries(selectedCountryName, selectedCountryFlagUrl, "", "", "")
+            viewModel.selectedItem.value = selectedItem
+        }
 
+        binding?.constraintLayout2?.performClick()
     }
+
+    private fun searchview() {
+        binding?.searchEditText?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString()
+                search(query)
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+
+    private fun search(query: String) {
+        val filteredPremiumServers = premiumServers.filter { server ->
+            server.country?.contains(query, ignoreCase = true) == true
+        }
+
+        adapterPREMIUM.submitList(filteredPremiumServers)
+
+        val filteredFreeServers = freeServers.filter { server ->
+            server.country?.contains(query, ignoreCase = true) == true
+        }
+
+        adapterFREE.submitList(filteredFreeServers)
+    }
+
+
     private fun setupPremiumRecyclerView() {
         recyclerView = binding?.recyclerView ?: return
         val premiumServers = loadServersvip()
@@ -74,25 +120,56 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         }
         loadServers()
     }
+    private fun saveSelectedCountry(country: Countries?) {
+        val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val editor = sharedPrefs.edit()
+
+        if (country != null) {
+            editor.putString("selectedCountryName", country.getCountry1())
+            editor.putString("selectedCountryFlagUrl", country.getFlagUrl1())
+        } else {
+            // If no item is selected, clear the saved data
+            editor.remove("selectedCountryName")
+            editor.remove("selectedCountryFlagUrl")
+        }
+
+        editor.apply()
+    }
 
     private fun clicklistner() {
         binding?.imageView7?.setOnClickListener {
             findNavController().popBackStack()
         }
-//        binding?.constraintLayout2?.setOnClickListener {
+        viewModel.selectedItem.observe(viewLifecycleOwner) { selectedItem ->
+            saveSelectedCountry(selectedItem)
+            selectedItem?.let { item ->
+                binding?.flagName?.text = item.getCountry1()
+                binding?.imageViewflag?.let {
+                    Glide.with(requireContext())
+                        .load(item.getFlagUrl1())
+                        .into(it)
+                }
+            }
+        }
+
+
+
+
+
+        binding?.constraintLayout2?.setOnClickListener {
 //            if (::adapterPREMIUM.isInitialized ){
 //                adapterPREMIUM.resetSelection()
 //                adapterPREMIUM.notifyDataSetChanged()
 //            }
-//
+
 //            selectedPosition = RecyclerView.NO_POSITION
 //            adapterFREE.resetSelection()
 //            adapterFREE.notifyDataSetChanged()
 //            isBackgroundChanged = !isBackgroundChanged
-//
-//            binding?.radio?.isChecked = !binding?.radio?.isChecked!!
-//            binding?.constraintLayout2?.setBackgroundResource(R.drawable.selector_background)
-//        }
+
+            binding?.radio?.isChecked = !binding?.radio?.isChecked!!
+            binding?.constraintLayout2?.setBackgroundResource(R.drawable.selector_background)
+        }
 
     }
     private fun loadServers(): List<Countries> {
@@ -140,6 +217,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
 
     override fun onItemClick(country: Countries, position: Int) {
 //        if (Config.vip_subscription || Config.all_subscription) {
+        viewModel.selectedItem.value = country
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("c", country)
         intent.putExtra("type", MainActivity.type)

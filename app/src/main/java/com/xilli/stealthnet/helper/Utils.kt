@@ -28,6 +28,10 @@ import com.xilli.stealthnet.R
 import com.xilli.stealthnet.speed.Speed
 import com.xilli.stealthnet.ui.toolside
 import es.dmoral.toasty.Toasty
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -80,20 +84,23 @@ object Utils: toolside() {
 
     var STATUS: String? = "DISCONNECTED"
     fun showIP(context: Context, textView: TextView) {
-        val queue = Volley.newRequestQueue(context)
-        val urlip = "https://checkip.amazonaws.com/"
+        val scope = CoroutineScope(Dispatchers.Main)
+        scope.launch {
+            delay(3000)
+            val queue = Volley.newRequestQueue(context)
+            val urlip = "https://checkip.amazonaws.com/"
 
-        val stringRequest = StringRequest(
-            Request.Method.GET, urlip,
-            Response.Listener<String> { response ->
-                textView.text = response
-            },
-            Response.ErrorListener { _ ->
-                textView.text = getIpv4HostAddress()
-            }
-        )
-
-        queue.add(stringRequest)
+            val stringRequest = StringRequest(
+                Request.Method.GET, urlip,
+                Response.Listener<String> { response ->
+                    textView.text = response
+                },
+                Response.ErrorListener { _ ->
+                    textView.text = getIpv4HostAddress()
+                }
+            )
+            queue.add(stringRequest)
+        }
     }
 
     fun initialize(context: Context) {
@@ -123,7 +130,6 @@ object Utils: toolside() {
                 tvConnectionStatus?.text = "Selected"
                 lottieAnimationView?.visibility = View.GONE
                 isConnected=true
-                Toasty.success(this, "Server Connected", Toast.LENGTH_SHORT).show()
             }
             "AUTH" -> {
                 STATUS = "AUTHENTICATION"
@@ -134,7 +140,6 @@ object Utils: toolside() {
                 connectionStateTextView?.setText(R.string.auth)
                 connectBtnTextView?.isEnabled = true
                 timerTextView?.visibility = View.GONE
-                Toasty.success(this, "Server AUTHENTICATION", Toast.LENGTH_SHORT).show()
             }
             "WAIT" -> {
                 STATUS = "WAITING"
@@ -145,7 +150,6 @@ object Utils: toolside() {
                 connectionStateTextView?.setText(R.string.wait)
                 connectBtnTextView?.isEnabled = true
                 timerTextView?.visibility = View.GONE
-                Toasty.success(this, "Server AUTHENTICATION", Toast.LENGTH_SHORT).show()
             }
             "RECONNECTING" -> {
                 STATUS = "RECONNECTING"

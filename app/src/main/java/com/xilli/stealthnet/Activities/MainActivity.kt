@@ -96,8 +96,8 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
     private var STATUS: String? = "DISCONNECTED"
 
     private fun connectToBillingService() {
-        if (!billingClient!!.isReady) {
-            billingClient!!.startConnection(this)
+        if (!billingClient?.isReady!!) {
+            billingClient?.startConnection(this)
         }
     }
 
@@ -117,8 +117,8 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {}
     private fun queryPurchases() {
-        val result = billingClient!!.queryPurchases(SkuType.SUBS)
-        val purchases = result.purchasesList
+        val result = billingClient?.queryPurchases(SkuType.SUBS)
+        val purchases = result?.purchasesList
         val skus: MutableList<String> = ArrayList()
         if (purchases != null) {
             var i = 0
@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             .setSkusList(skuList)
             .setType(skuType)
             .build()
-        billingClient!!.querySkuDetailsAsync(
+        billingClient?.querySkuDetailsAsync(
             params
         ) { billingResult: BillingResult, skuDetailsList: List<SkuDetails>? ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && skuDetailsList != null) {
@@ -167,7 +167,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         connectToBillingService()
         val intent = intent
         if (getIntent().extras != null) {
-            selectedCountry = getIntent().extras!!.getParcelable("c")
+            selectedCountry = getIntent().extras?.getParcelable("c")
             updateUI("LOAD")
             if (!Utility.isOnline(applicationContext)) {
                 showMessage("No Internet Connection", "error")
@@ -177,10 +177,12 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         } else {
             if (selectedCountry != null) {
                 updateUI("CONNECTED")
-                Glide.with(this)
-                    .load(selectedCountry!!.flagUrl)
-                    .into(imgFlag!!)
-                flagName!!.text = selectedCountry!!.country
+                imgFlag?.let {
+                    Glide.with(this)
+                        .load(selectedCountry?.flagUrl)
+                        .into(it)
+                }
+                flagName?.text = selectedCountry?.country
 
             }
         }
@@ -306,7 +308,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
     fun startVpn() {
         try {
             if (selectedCountry != null) {
-                ActiveServer.saveServer(selectedCountry!!, this@MainActivity)
+                ActiveServer.saveServer(selectedCountry, this@MainActivity)
                 OpenVpnApi.startVpn(
                     this,
                     selectedCountry?.ovpn,
@@ -324,24 +326,34 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
     }
 
 
-    var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             try {
-                Objects.requireNonNull(getIntent().getStringExtra("state"))?.let { updateUI(it) }
+                Objects.requireNonNull(getIntent().getStringExtra("state")).let {
+                    if (it != null) {
+                        updateUI(it)
+                    }
+                }
                 Objects.requireNonNull(intent.getStringExtra("state"))
-                    ?.let { Log.v("CHECKSTATE", it) }
+                    .let {
+                        if (it != null) {
+                            Log.v("CHECKSTATE", it)
+                        }
+                    }
                 if (isFirst) {
                     if (ActiveServer.getSavedServer(this@MainActivity).country != null) {
                         selectedCountry = ActiveServer.getSavedServer(this@MainActivity)
-                        Glide.with(this@MainActivity)
-                            .load(selectedCountry?.flagUrl)
-                            .into(imgFlag!!)
-                        flagName!!.text = selectedCountry?.country
+                        imgFlag?.let {
+                            Glide.with(this@MainActivity)
+                                .load(selectedCountry?.flagUrl)
+                                .into(it)
+                        }
+                        flagName?.text = selectedCountry?.country
                     }
                     isFirst = false
                 }
                 isConnected = true
-                showMessage("Now u can click", "success")
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -359,6 +371,10 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
                 e.printStackTrace()
             }
         }
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+//        disconnectFromVpn()
     }
 
    fun checkSelectedCountry() {

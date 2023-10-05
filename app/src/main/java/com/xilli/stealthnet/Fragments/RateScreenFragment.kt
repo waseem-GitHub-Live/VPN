@@ -37,7 +37,9 @@ import kotlin.math.abs
 
 
 class RateScreenFragment : Fragment(){
-
+    private var elapsedTimeMillis: Long = 0
+    private var rxBytes: Long = 0
+    private var txBytes: Long = 0
     private var binding: FragmentRateScreenBinding? = null
     private val mHandler = Handler()
     private var startTimeMillis: Long = 0
@@ -52,8 +54,10 @@ class RateScreenFragment : Fragment(){
     private val handler = Handler(Looper.getMainLooper())
     var selectedCountry: Countries? = null
     private var isFirst = true
-    val countryName = Utils.countryName
-    val flagUrl = Utils.flagUrl
+    private var countryName: String? = null
+    private var flagUrl: String? = null
+    val countryName1 = Utils.countryName
+    val flagUrl1 = Utils.flagUrl
     companion object {
         var type = ""
         val activeServer = ActiveServer()
@@ -71,6 +75,25 @@ class RateScreenFragment : Fragment(){
         binding = FragmentRateScreenBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
         binding?.lifecycleOwner = viewLifecycleOwner
+        if (savedInstanceState != null) {
+            // Restore saved data
+            elapsedTimeMillis = savedInstanceState.getLong("elapsedTimeMillis", 0)
+            rxBytes = savedInstanceState.getLong("rxBytes", 0)
+            txBytes = savedInstanceState.getLong("txBytes", 0)
+            countryName = savedInstanceState.getString("countryName")
+            flagUrl = savedInstanceState.getString("flagUrl")
+        }
+
+        // Populate UI elements with restored data
+        binding?.timeline?.text = formatElapsedTime(elapsedTimeMillis)
+        binding?.textView4?.text = formatBytes(rxBytes)
+        binding?.uploaddata?.text = formatBytes(txBytes)
+        binding?.flagName?.text = countryName
+        if (flagUrl != null) {
+            Glide.with(this)
+                .load(flagUrl)
+                .into(binding?.flagimageView!!)
+        }
         return binding?.root
     }
 
@@ -107,13 +130,13 @@ class RateScreenFragment : Fragment(){
         return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
     private fun datasheet() {
-        if (countryName != null && flagUrl != null) {
+        if (countryName1 != null && flagUrl1 != null) {
             binding?.flagimageView?.let {
                 Glide.with(this)
-                    .load(flagUrl)
+                    .load(flagUrl1)
                     .into(it)
             }
-            binding?.flagName?.text = countryName
+            binding?.flagName?.text = countryName1
         }
     }
     override fun onResume() {
@@ -301,7 +324,7 @@ class RateScreenFragment : Fragment(){
         try {
             OpenVPNThread.stop()
             updateUI("DISCONNECTED")
-            Toast.makeText(context, "vpn Disconnected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "vpn Disconnected", Toast.LENGTH_SHORT).show()
         } catch (e: java.lang.Exception) {
             e.printStackTrace()
         }
@@ -319,55 +342,13 @@ class RateScreenFragment : Fragment(){
         onBackPressedCallback.remove()
         super.onDestroyView()
     }
-
-//    var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-//        override fun onReceive(context: Context, intent: Intent) {
-//            try {
-//                intent.getStringExtra("state")?.let { updateUI(it) }
-//                Log.v("CHECKSTATE", intent.getStringExtra("state")!!)
-//                if (isFirst) {
-//                    if (getContext()?.let { activeServer.getSavedServer(it)?.getCountry1() } != null) {
-//                        selectedCountry = getContext()?.let { activeServer.getSavedServer(it) }
-//                        getContext()?.let {
-//                            imgFlag?.let { it1 ->
-//                                Glide.with(it)
-//                                    .load(selectedCountry?.getFlagUrl1())
-//                                    .into(it1)
-//                            }
-//                        }
-//                        flagName?.setText(selectedCountry?.getCountry1())
-//                    }
-//                    isFirst = false
-//                }
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-//            try {
-//                var duration = intent.getStringExtra("duration")
-//                var lastPacketReceive = intent.getStringExtra("lastPacketReceive")
-//                var byteIn = intent.getStringExtra("byteIn")
-//                var byteOut = intent.getStringExtra("byteOut")
-//                if (duration == null) duration = "00:00:00"
-//                if (lastPacketReceive == null) lastPacketReceive = "0"
-//                if (byteIn == null) byteIn = " "
-//                if (byteOut == null) byteOut = " "
-//                updateConnectionStatus(duration, lastPacketReceive, byteIn, byteOut)
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-//        }
-//    }
-//    fun updateConnectionStatus(
-//        duration: String?,
-//        lastPacketReceive: String?,
-//        byteIn: String,
-//        byteOut: String
-//    ) {
-//        val byteinKb = byteIn.split("-").toTypedArray()[1]
-//        val byteoutKb = byteOut.split("-").toTypedArray()[1]
-//
-//        textDownloading!!.text = byteinKb
-//        textUploading!!.text = byteoutKb
-//        timerTextView!!.text = duration
-//    }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // Save the data you want to restore later
+        outState.putLong("elapsedTimeMillis", elapsedTimeMillis)
+        outState.putLong("rxBytes", rxBytes)
+        outState.putLong("txBytes", txBytes)
+        outState.putString("countryName", countryName)
+        outState.putString("flagUrl", flagUrl)
+    }
 }

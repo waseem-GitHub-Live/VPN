@@ -18,8 +18,8 @@ import com.xilli.stealthnet.Fragments.ServerListFragment
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.model.Countries
 
-class SearchView_Free_Adapter(private val context: Context,private val dataList: List<Countries>,private val parentFragment: Fragment ) :
-    RecyclerView.Adapter<SearchView_Free_Adapter.ViewHolder>() {
+class SearchView_Free_Adapter(private val context: Context, private var dataList: List<Countries>, private val parentFragment: Fragment ) :
+    RecyclerView.Adapter<SearchView_Free_Adapter.ViewHolder>( ) {
     private var onItemClickListener: ((Int) -> Unit)? = null
     private var selectedPosition: Int = RecyclerView.NO_POSITION
 
@@ -92,6 +92,10 @@ class SearchView_Free_Adapter(private val context: Context,private val dataList:
                 }
             }
         }
+    }
+    fun submitList(filteredPremiumServers: List<Countries>) {
+        dataList = filteredPremiumServers
+        notifyDataSetChanged()
     }
 
 }

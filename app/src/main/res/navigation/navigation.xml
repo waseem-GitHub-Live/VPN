@@ -90,7 +90,7 @@
         tools:layout="@layout/fragment_language" />
     <fragment
         android:id="@+id/splitTunningFragment"
-        android:name="com.xilli.stealthnet.ui.menu.SplitTunningFragment"
+        android:name="com.xilli.stealthnet.Fragments.menu.SplitTunningFragment"
         android:label="SplitTunningFragment"
         tools:layout="@layout/fragment_split_tunning"/>
     <fragment
