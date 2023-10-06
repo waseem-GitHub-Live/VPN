@@ -50,7 +50,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupFreeRecyclerView()
+//        setupFreeRecyclerView()
         setupPremiumRecyclerView()
         clicklistner()
         searchview()
@@ -97,29 +97,33 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     private fun setupPremiumRecyclerView() {
         recyclerView = binding?.recyclerView ?: return
         val premiumServers = loadServersvip()
-        adapterPREMIUM = SearchView_Premium_Adapter(requireContext(),premiumServers )
+        val freeserver = loadServers()
+        val list = mutableListOf<Countries>()
+        list.addAll(premiumServers)
+        list.addAll(freeserver)
+
+        adapterPREMIUM = SearchView_Premium_Adapter(requireContext(),list )
         adapterPREMIUM.setOnItemClickListener(this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapterPREMIUM
     }
 
 
-    private fun setupFreeRecyclerView() {
-        recyclerView = binding?.recyclerview2 ?: return
-        val freeserver = loadServers()
-        adapterFREE = SearchView_Free_Adapter(requireContext(), freeserver, this)
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapterFREE
-        adapterFREE.setOnItemClickListener { position ->
-            adapterFREE.setSelectedPosition(position)
-            adapterPREMIUM.resetSelection()
-            adapterFREE.notifyDataSetChanged()
-            adapterPREMIUM.notifyDataSetChanged()
-//            binding?.constraintLayout2?.setBackgroundResource(R.drawable.background_black_card)
-//            binding?.radio?.isChecked = false
-        }
-        loadServers()
-    }
+//    private fun setupFreeRecyclerView() {
+//        recyclerView = binding?.recyclerview2 ?: return
+//
+//        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+//        recyclerView.adapter = adapterFREE
+//        adapterFREE.setOnItemClickListener { position ->
+//            adapterFREE.setSelectedPosition(position)
+//            adapterPREMIUM.resetSelection()
+//            adapterFREE.notifyDataSetChanged()
+//            adapterPREMIUM.notifyDataSetChanged()
+////            binding?.constraintLayout2?.setBackgroundResource(R.drawable.background_black_card)
+////            binding?.radio?.isChecked = false
+//        }
+//        loadServers()
+//    }
     private fun saveSelectedCountry(country: Countries?) {
         val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val editor = sharedPrefs.edit()
