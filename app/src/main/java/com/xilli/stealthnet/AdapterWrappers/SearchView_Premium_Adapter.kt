@@ -5,11 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RadioButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.R
+import com.xilli.stealthnet.Utils.Constants.FREE_SERVERS
+import com.xilli.stealthnet.Utils.Constants.PREMIUM_SERVERS
+import com.xilli.stealthnet.helper.Utils.loadServersvip
 import com.xilli.stealthnet.model.Countries
 
 class SearchView_Premium_Adapter(private val context: Context,
@@ -44,28 +50,42 @@ class SearchView_Premium_Adapter(private val context: Context,
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val data = dataList[position]
 
-
         Glide.with(context)
-            .load(data.getFlagUrl1())
+            .load(data.flagUrl)
             .into(holder.flagImageView)
-
         holder.flagNameTextView.text = data.country
         holder.signalImageView.setImageResource(data.signal) // Use the signal property
-        holder.crownImageView.setImageResource(data.crown)   // Use the crown property
 
-
+        val isSelected = position == selectedPosition
         holder.constraintLayout.setBackgroundResource(
-            if (position == selectedPosition) R.drawable.selector_background
+            if (isSelected) R.drawable.selector_background
             else R.drawable.background_black_card
         )
 
+        // Determine whether to show RadioButton or Crown image based on data source
+        val isFreeData = dataList.indexOf(data) < loadServersvip().size // Assuming free data comes before premium data
+        val isPremiumData = !isFreeData
+
+        if (isFreeData) {
+            // Show RadioButton for free data
+            holder.radioButton.visibility = View.VISIBLE
+            holder.radioButton.isChecked = isSelected
+            holder.crownImageView.visibility = View.GONE
+        } else if (isPremiumData) {
+            // Show Crown image for premium data
+            holder.crownImageView.visibility = View.VISIBLE
+            holder.radioButton.visibility = View.GONE
+        } else {
+            // Neither free nor premium, handle this case as needed (e.g., show an error message)
+            Toast.makeText(context, "No country selected", Toast.LENGTH_SHORT).show()
+            holder.radioButton.visibility = View.GONE
+            holder.crownImageView.visibility = View.GONE
+        }
+
         holder.constraintLayout.setOnClickListener {
-            onItemClickListener?.onItemClick(data,position) // Call onItemClick with the selected data
+            onItemClickListener?.onItemClick(data, position)
         }
     }
-
-
-
     override fun getItemCount(): Int {
         return dataList.size
     }
@@ -81,6 +101,15 @@ class SearchView_Premium_Adapter(private val context: Context,
 //        val vpnIpTextView: TextView = itemView.findViewById(R.id.vpn_ip)
         val signalImageView: ImageView = itemView.findViewById(R.id.signalgreen)
         val crownImageView: ImageView = itemView.findViewById(R.id.radio)
+        val radioButton: RadioButton = itemView.findViewById(R.id.radio2)
         val constraintLayout: ConstraintLayout = itemView.findViewById(R.id.constraintLayoutpremium)
+        init {
+            radioButton.setOnClickListener {
+                val position = adapterPosition // Get the adapter position of this ViewHolder
+                if (position != RecyclerView.NO_POSITION) {
+                    onItemClickListener?.onItemClick(dataList[position], position)
+                }
+            }
+        }
     }
 }

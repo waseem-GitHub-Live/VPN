@@ -1,42 +1,59 @@
 package com.xilli.stealthnet.Fragments
 
 import android.app.AlertDialog
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.VpnService
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.findNavController
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieDrawable
+import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.Activities.MainActivity.Companion.selectedCountry
 import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentHomeBinding
+import com.xilli.stealthnet.helper.OnVpnConnectedListener
+import com.xilli.stealthnet.helper.Utils
+import com.xilli.stealthnet.helper.Utils.getIntent
 import com.xilli.stealthnet.helper.Utils.isConnected
 import com.xilli.stealthnet.helper.Utils.isVpnConnected
+import com.xilli.stealthnet.helper.Utils.showMessage
 import com.xilli.stealthnet.model.Countries
+import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
 import com.xilli.stealthnet.ui.viewmodels.VpnViewModel
+import es.dmoral.toasty.Toasty
+import kotlinx.android.synthetic.main.fragment_home.imageView4
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.oneconnectapi.app.core.OpenVPNThread
+import java.util.Objects
 
 class HomeFragment : Fragment() {
     private var binding: FragmentHomeBinding? = null
-    private lateinit var viewModel: VpnViewModel
+    private val viewModel by viewModels<SharedViewmodel>()
     private var isFirst = true
     private var connectionStateTextView: TextView? = null
     private var timerTextView: TextView? = null
@@ -47,7 +64,6 @@ class HomeFragment : Fragment() {
 
     companion object {
         var type = ""
-        val activeServer = ActiveServer()
     }
     @JvmField
     var flagName: TextView? = null
@@ -62,11 +78,11 @@ class HomeFragment : Fragment() {
     ): View? {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
         loadLottieAnimation()
-        viewModel = ViewModelProvider(requireActivity())[VpnViewModel::class.java]
+        LocalBroadcastManager.getInstance(requireContext())
+            .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
         binding?.lifecycleOwner = viewLifecycleOwner
         connectionStateTextView = binding?.root?.findViewById(R.id.textView6)
         timerTextView = binding?.root?.findViewById(R.id.timeline)
-        setConnectBtnClickListener()
         return binding?.root
     }
 
@@ -74,29 +90,33 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         clicklistner()
         backpressed()
-
+        setConnectBtnClickListener()
         val countryName = arguments?.getString("countryName")
         val flagUrl = arguments?.getString("flagUrl")
     }
 
     fun setConnectBtnClickListener() {
+        val mainActivity = activity as? MainActivity
+        val context = requireContext()
+
         binding?.imageView4?.setOnClickListener {
-            if (!Utility.isOnline(requireContext())) {
+            if (!Utility.isOnline(context)) {
+                // Handle the case when there is no internet connection
                 noconnectionD()
-                val mainActivity = activity as? MainActivity
-                mainActivity?.showMessage("Connect to internet and start again", "error")
-            } else {
-                if (selectedCountry != null && !isVpnConnected(requireContext())) {
-                    val mainActivity = activity as? MainActivity
-                    mainActivity?.showMessage("VPN is Connecting WAIT", "success")
-
-                    val intent = VpnService.prepare(requireContext())
-                    if (intent != null) {
-                        val VPN_PERMISSION_REQUEST_CODE = 123
-                        startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
-                    } else {
-
-                        mainActivity?.prepareVpn()
+                binding?.connect?.text = "Wait"
+                showMessage("Connect to the internet and start again", "error", context)
+            } else if (selectedCountry != null) {
+                showMessage("VPN is Connecting WAIT", "success", context)
+                binding?.connect?.text = "Authenticating"
+                val intent = VpnService.prepare(context)
+                if (intent != null) {
+                    val VPN_PERMISSION_REQUEST_CODE = 123
+                    startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
+                    binding?.connect?.text = "Disconnect"
+                } else {
+                    val isVpnConnected = mainActivity?.prepareVpn()
+                    if (isVpnConnected == true) {
+                        // VPN is connected
                         mainActivity?.btnConnectDisconnect()
                         loadLottieAnimation()
                         binding?.connect?.text = "Loading...."
@@ -106,24 +126,129 @@ class HomeFragment : Fragment() {
                         // Use a coroutine to delay the navigation
                         lifecycleScope.launch {
                             delay(8000) // Delay for 8 seconds
-                            binding?.connect?.text = "Connected"
-                            val navController = Navigation.findNavController(
-                                requireActivity(),
-                                R.id.nav_host_fragment
-                            )
-                            val action =
-                                HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
-                            navController.navigate(action)
+
+//                            val navController = Navigation.findNavController(
+//                                requireActivity(),
+//                                R.id.nav_host_fragment
+//                            )
+//                            val action =
+//                                HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
+//                            navController.navigate(action)
                         }
+                    } else {
+                        // VPN connection failed
+                        showMessage("VPN connection failed", "error", context)
                     }
-                } else {
-                    val mainActivity = activity as? MainActivity
-                    mainActivity?.showMessage("Select a server first", "error")
                 }
+            } else {
+                showMessage("Select a server first", "error", context)
             }
         }
-
     }
+
+    private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            try {
+                val vpnState = intent.getStringExtra("state")
+                if (vpnState != null) {
+                    if (vpnState == "CONNECTED") {
+                        // VPN is connected
+                        Utils.updateUI("connected") // You can update UI accordingly
+                        isConnected = true
+                        binding?.connect?.text = "Connected"
+                        val navController = Navigation.findNavController(
+                            requireActivity(),
+                            R.id.nav_host_fragment
+                        )
+                        val action =
+                            HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
+                        navController.navigate(action)
+                    } else if (vpnState == "DISCONNECTED") {
+                        // VPN is disconnected
+                        Utils.updateUI("disconnected") // You can update UI accordingly
+                        isConnected = false
+                        binding?.connect?.text = "Disconnected"
+                        showMessage("Select AGain Please!!", "error")
+                    }
+                    Log.v("yoo", vpnState)
+                }
+
+                Objects.requireNonNull(getIntent().getStringExtra("state")).let {
+                    if (it != null) {
+                        Utils.updateUI(it)
+
+                    }
+                }
+                Objects.requireNonNull(intent.getStringExtra("state"))
+                    .let {
+                        if (it != null) {
+                            Log.v("CHECKSTATE", it)
+
+                        }
+                    }
+                if (isFirst) {
+                    if (ActiveServer.getSavedServer(requireContext()).country != null) {
+                        selectedCountry = ActiveServer.getSavedServer(requireContext())
+                        Utils.imgFlag?.let {
+                            Glide.with(requireContext())
+                                .load(selectedCountry?.flagUrl)
+                                .into(it)
+                        }
+                        Utils.flagName?.text = selectedCountry?.country
+                    }
+                    isFirst = false
+                }
+                isConnected = true
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                var duration = intent.getStringExtra("duration")
+                var lastPacketReceive = intent.getStringExtra("lastPacketReceive")
+                var byteIn = intent.getStringExtra("byteIn")
+                var byteOut = intent.getStringExtra("byteOut")
+                if (duration == null) duration = "00:00:00"
+                if (lastPacketReceive == null) lastPacketReceive = "0"
+                if (byteIn == null) byteIn = " "
+                if (byteOut == null) byteOut = " "
+                updateConnectionStatus(duration, lastPacketReceive, byteIn, byteOut)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+        }
+    }
+    fun updateConnectionStatus(
+        duration: String?,
+        lastPacketReceive: String?,
+        byteIn: String,
+        byteOut: String
+    ) {
+        val byteinKb = byteIn.split("-").toTypedArray()[1]
+        val byteoutKb = byteOut.split("-").toTypedArray()[1]
+
+        Utils.textDownloading?.text = byteinKb
+        Utils.textUploading?.text = byteoutKb
+        Utils.timerTextView?.text = duration
+    }
+    fun showMessage(msg: String?, type: String, context: Context?) {
+        // Check if context is not null before using it
+        context?.let {
+            if (type == "success") {
+                if (msg != null) {
+                    Toasty.success(it, msg, Toast.LENGTH_SHORT, true).show()
+                }
+            } else if (type == "error") {
+                if (msg != null) {
+                    Toasty.error(it, msg, Toast.LENGTH_SHORT, true).show()
+                }
+            } else {
+                // Handle other types if needed
+            }
+        }
+    }
+
     private fun noconnectionD() {
         val alertDialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_vpn_connection, null)
@@ -209,7 +334,7 @@ class HomeFragment : Fragment() {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        //connect button for vpn still not using correctly!!!
+
 
         binding?.constraintLayout2?.setOnClickListener {
             findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToServerListFragment())
@@ -231,6 +356,4 @@ class HomeFragment : Fragment() {
             true
         }
     }
-
-
 }

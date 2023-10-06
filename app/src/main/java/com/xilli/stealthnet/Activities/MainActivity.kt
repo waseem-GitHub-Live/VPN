@@ -20,10 +20,13 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
@@ -56,20 +59,24 @@ import com.xilli.stealthnet.Fragments.HomeFragment
 import com.xilli.stealthnet.Fragments.HomeFragmentDirections
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
+import com.xilli.stealthnet.helper.OnVpnConnectedListener
 import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.connectBtnTextView
 import com.xilli.stealthnet.helper.Utils.connectionStateTextView
 import com.xilli.stealthnet.helper.Utils.flagName
 import com.xilli.stealthnet.helper.Utils.imgFlag
 import com.xilli.stealthnet.helper.Utils.isConnected
+import com.xilli.stealthnet.helper.Utils.isVpnConnected
 import com.xilli.stealthnet.helper.Utils.ivConnectionStatusImage
 import com.xilli.stealthnet.helper.Utils.lottieAnimationView
+import com.xilli.stealthnet.helper.Utils.showMessage
 import com.xilli.stealthnet.helper.Utils.textDownloading
 import com.xilli.stealthnet.helper.Utils.textUploading
 import com.xilli.stealthnet.helper.Utils.timerTextView
 import com.xilli.stealthnet.helper.Utils.tvConnectionStatus
 import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
+import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
 import es.dmoral.toasty.Toasty
 import kotlinx.android.synthetic.main.fragment_home.imageView4
 import top.oneconnectapi.app.OpenVpnApi
@@ -79,7 +86,7 @@ import java.util.Arrays
 import java.util.Locale
 import java.util.Objects
 
-class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener {
+class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener{
     private val locale: Locale? = null
     private var isFirst = true
     private val vpnThread = OpenVPNThread()
@@ -93,8 +100,10 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             Config.all_yearly_id
         )
     )
+    private val viewModel by viewModels<SharedViewmodel>()
     private var STATUS: String? = "DISCONNECTED"
-
+    private var yourFragment: HomeFragment? = null
+    private var vpnStateCallback: OnVpnConnectedListener? = null
     private fun connectToBillingService() {
         if (!billingClient?.isReady!!) {
             billingClient?.startConnection(this)
@@ -172,7 +181,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             if (!Utility.isOnline(applicationContext)) {
                 showMessage("No Internet Connection", "error")
             } else {
-                showMessage("Vpn is preparing", "success")
+                showMessage("working", "success")
             }
         } else {
             if (selectedCountry != null) {
@@ -212,6 +221,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 //        homeFragment?.setConnectBtnClickListener()
         connectBtnTextView?.setOnClickListener {
         }
+//        viewModel = ViewModelProvider(this).get(SharedViewmodel::class.java)
 //        OneSignal.initWithContext(this)
 //        OneSignal.setAppId("a2be7720-a32b-415a-9db1-d50fdc54f069")
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
@@ -283,7 +293,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         }
     }
 
-    fun prepareVpn() {
+    fun prepareVpn(): Boolean {
         imgFlag?.let {
             Glide.with(this)
                 .load(selectedCountry?.flagUrl)
@@ -303,6 +313,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         } else {
             showMessage("No Internet Connection", "error")
         }
+        return isVpnConnected(this)
     }
 
     fun startVpn() {
@@ -324,14 +335,40 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             e.printStackTrace()
         }
     }
-
+    override fun onResume() {
+        super.onResume()
+        // Register the broadcast receiver in onResume
+        val intentFilter = IntentFilter("your.vpn.state.action")
+        registerReceiver(broadcastReceiver, intentFilter)
+    }
+    override fun onPause() {
+        super.onPause()
+        // Unregister the broadcast receiver in onPause
+        unregisterReceiver(broadcastReceiver)
+    }
 
     private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             try {
+                val vpnState = intent.getStringExtra("state")
+                if (vpnState != null) {
+                    if (vpnState == "CONNECTED") {
+                        // VPN is connected
+                        updateUI("connected") // You can update UI accordingly
+                        isConnected = true
+
+                    } else if (vpnState == "DISCONNECTED") {
+                        // VPN is disconnected
+                        updateUI("disconnected") // You can update UI accordingly
+                        isConnected = false
+                    }
+                    Log.v("CHECKSTATE1", vpnState)
+                }
+
                 Objects.requireNonNull(getIntent().getStringExtra("state")).let {
                     if (it != null) {
                         updateUI(it)
+
                     }
                 }
                 Objects.requireNonNull(intent.getStringExtra("state"))
@@ -376,6 +413,9 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         super.onDestroy()
 //        disconnectFromVpn()
     }
+    fun isVPNConnected(): Boolean {
+        return isConnected // Assuming isConnected is a variable indicating the VPN state
+    }
 
    fun checkSelectedCountry() {
         if (selectedCountry == null) {
@@ -389,50 +429,20 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 
     companion object {
 
-
-        var indratech_toto_27640849_fb_reward_id: String? = null
-        var indratech_toto_27640849_admob_reward: String? = null
-        @JvmField
-        var copyright_indratech_official_dont_change_the_value: String? = null
         var selectedCountry: Countries? = null
         @JvmField
         var type: String? = ""
-        @JvmField
-        var indratech_fast_27640849_admob_id = ""
+
         @JvmField
         var indratech_fast_27640849_ad_banner_id: String? = ""
         @JvmField
         var admob_interstitial_id: String? = ""
-        @JvmField
-        var indratech_fast_27640849_aad_native_id = ""
+
         @JvmField
         var indratech_fast_27640849_fb_native_id: String? = ""
         @JvmField
         var indratech_fast_27640849_fb_interstitial_id: String? = ""
-        @JvmField
-        var indratech_fast_27640849_all_ads_on_off = false
-    }
 
-
-
-    fun loadLottieAnimation() {
-        val lottieAnimationView: LottieAnimationView = findViewById(R.id.lottieAnimationView)
-        lottieAnimationView.setAnimation(R.raw.loading_animation)
-
-        val lottieAnimationView2: LottieAnimationView = findViewById(R.id.lottieAnimationView2)
-        lottieAnimationView2.setAnimation(R.raw.backview)
-        lottieAnimationView2.repeatCount = LottieDrawable.INFINITE
-
-        lottieAnimationView.addAnimatorUpdateListener {
-            // Update listener logic here
-        }
-
-        lottieAnimationView2.addAnimatorUpdateListener {
-            // Update listener logic here
-        }
-
-        lottieAnimationView.playAnimation()
-        lottieAnimationView2.playAnimation()
     }
 
     private val mUIHandler = Handler(Looper.getMainLooper())
@@ -517,5 +527,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         textUploading?.text = byteoutKb
         timerTextView?.text = duration
     }
+
+
 
 }

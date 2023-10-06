@@ -52,4 +52,14 @@ class SharedViewmodel : ViewModel() {
     var isSwitchCheckedsavedata = MutableLiveData<Boolean>()
 
     val selectedItem: MutableLiveData<Countries> = MutableLiveData()
+
+    private val isConnectedLiveData = MutableLiveData<Boolean>()
+
+    fun setVPNStatus(isConnected: Boolean) {
+        isConnectedLiveData.value = isConnected
+    }
+
+    fun isConnectedToVPN(): LiveData<Boolean> {
+        return isConnectedLiveData
+    }
 }

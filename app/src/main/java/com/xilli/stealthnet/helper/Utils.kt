@@ -25,6 +25,8 @@ import com.facebook.ads.NativeAdLayout
 import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
+import com.xilli.stealthnet.Utils.Constants
+import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.speed.Speed
 import com.xilli.stealthnet.ui.toolside
 import es.dmoral.toasty.Toasty
@@ -32,6 +34,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -86,7 +91,7 @@ object Utils: toolside() {
     fun showIP(context: Context, textView: TextView) {
         val scope = CoroutineScope(Dispatchers.Main)
         scope.launch {
-            delay(3000)
+            delay(1000)
             val queue = Volley.newRequestQueue(context)
             val urlip = "https://checkip.amazonaws.com/"
 
@@ -102,7 +107,48 @@ object Utils: toolside() {
             queue.add(stringRequest)
         }
     }
-
+     fun loadServers(): List<Countries> {
+        val servers = ArrayList<Countries>()
+        try {
+            val jsonArray = JSONArray(Constants.FREE_SERVERS)
+            for (i in 0 until jsonArray.length()) {
+                val `object` = jsonArray[i] as JSONObject
+                servers.add(
+                    Countries(
+                        `object`.getString("serverName"),
+                        `object`.getString("flag_url"),
+                        `object`.getString("ovpnConfiguration"),
+                        `object`.getString("vpnUserName"),
+                        `object`.getString("vpnPassword")
+                    )
+                )
+            }
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+        return servers
+    }
+     fun loadServersvip(): List<Countries> {
+        val servers = ArrayList<Countries>()
+        try {
+            val jsonArray = JSONArray(Constants.PREMIUM_SERVERS)
+            for (i in 0 until jsonArray.length()) {
+                val `object` = jsonArray[i] as JSONObject
+                val country = Countries( // Create a new Countries object
+                    `object`.getString("serverName"),
+                    `object`.getString("flag_url"),
+                    `object`.getString("ovpnConfiguration"),
+                    `object`.getString("vpnUserName"),
+                    `object`.getString("vpnPassword")
+                )
+                country.isPremium = true // Set the isPremium property for premium servers
+                servers.add(country)
+            }
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+        return servers
+    }
     fun initialize(context: Context) {
         appContext = context
     }
@@ -234,9 +280,31 @@ object Utils: toolside() {
         get() = TODO("Not yet implemented")
     fun isVpnConnected(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val vpnService = VpnService.prepare(context)
+        val networkInfo = connectivityManager.activeNetworkInfo
 
-        // Check if VPN service is prepared and if the VPN is active
-        return vpnService != null && connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_VPN)?.isConnected == true
+        return networkInfo != null && networkInfo.isConnected
     }
+    fun showMessage(msg: String?, type: String) {
+
+        if (type == "success") {
+            Toasty.success(
+                this,
+                msg + "",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else if (type == "error") {
+            Toasty.error(
+                this,
+                msg + "",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            Toasty.normal(
+                this,
+                msg + "",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
 }

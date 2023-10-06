@@ -13,7 +13,7 @@ class Countries : Parcelable {
     var signal: Int = 0
     var crown: Int = 0
     var radiobutton: Boolean = false
-
+    var isPremium: Boolean = false
     constructor() {}
 
     constructor(country: String?, flagUrl: String?, ovpn: String?) {

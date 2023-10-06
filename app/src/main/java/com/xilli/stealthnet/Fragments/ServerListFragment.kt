@@ -20,6 +20,8 @@ import com.xilli.stealthnet.AdapterWrappers.SearchView_Premium_Adapter
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.Constants
 import com.xilli.stealthnet.databinding.FragmentServerListBinding
+import com.xilli.stealthnet.helper.Utils.loadServers
+import com.xilli.stealthnet.helper.Utils.loadServersvip
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
 import org.json.JSONArray
@@ -31,7 +33,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     private var binding: FragmentServerListBinding?=null
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapterPREMIUM: SearchView_Premium_Adapter
-    private lateinit var adapterFREE: SearchView_Free_Adapter
+//    private lateinit var adapterFREE: SearchView_Free_Adapter
     private var isBackgroundChanged = false
     private var selectedPosition = RecyclerView.NO_POSITION
     private var fragment: Fragment?= null
@@ -86,11 +88,6 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
 
         adapterPREMIUM.submitList(filteredPremiumServers)
 
-        val filteredFreeServers = freeServers.filter { server ->
-            server.country?.contains(query, ignoreCase = true) == true
-        }
-
-        adapterFREE.submitList(filteredFreeServers)
     }
 
 
@@ -101,29 +98,11 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         val list = mutableListOf<Countries>()
         list.addAll(premiumServers)
         list.addAll(freeserver)
-
         adapterPREMIUM = SearchView_Premium_Adapter(requireContext(),list )
         adapterPREMIUM.setOnItemClickListener(this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapterPREMIUM
     }
-
-
-//    private fun setupFreeRecyclerView() {
-//        recyclerView = binding?.recyclerview2 ?: return
-//
-//        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-//        recyclerView.adapter = adapterFREE
-//        adapterFREE.setOnItemClickListener { position ->
-//            adapterFREE.setSelectedPosition(position)
-//            adapterPREMIUM.resetSelection()
-//            adapterFREE.notifyDataSetChanged()
-//            adapterPREMIUM.notifyDataSetChanged()
-////            binding?.constraintLayout2?.setBackgroundResource(R.drawable.background_black_card)
-////            binding?.radio?.isChecked = false
-//        }
-//        loadServers()
-//    }
     private fun saveSelectedCountry(country: Countries?) {
         val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val editor = sharedPrefs.edit()
@@ -139,7 +118,6 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
 
         editor.apply()
     }
-
     private fun clicklistner() {
         binding?.imageView7?.setOnClickListener {
             findNavController().popBackStack()
@@ -155,72 +133,16 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
                 }
             }
         }
-
-
-
-
-
         binding?.constraintLayout2?.setOnClickListener {
-//            if (::adapterPREMIUM.isInitialized ){
-//                adapterPREMIUM.resetSelection()
-//                adapterPREMIUM.notifyDataSetChanged()
-//            }
-
-//            selectedPosition = RecyclerView.NO_POSITION
-//            adapterFREE.resetSelection()
-//            adapterFREE.notifyDataSetChanged()
-//            isBackgroundChanged = !isBackgroundChanged
-
             binding?.radio?.isChecked = !binding?.radio?.isChecked!!
             binding?.constraintLayout2?.setBackgroundResource(R.drawable.selector_background)
         }
 
     }
-    private fun loadServers(): List<Countries> {
-        val servers = ArrayList<Countries>()
-        try {
-            val jsonArray = JSONArray(Constants.FREE_SERVERS)
-            for (i in 0 until jsonArray.length()) {
-                val `object` = jsonArray[i] as JSONObject
-                servers.add(
-                    Countries(
-                        `object`.getString("serverName"),
-                        `object`.getString("flag_url"),
-                        `object`.getString("ovpnConfiguration"),
-                        `object`.getString("vpnUserName"),
-                        `object`.getString("vpnPassword")
-                    )
-                )
-            }
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
-        return servers
-    }
-    private fun loadServersvip(): List<Countries> {
-        val servers = ArrayList<Countries>()
-        try {
-            val jsonArray = JSONArray(Constants.PREMIUM_SERVERS)
-            for (i in 0 until jsonArray.length()) {
-                val `object` = jsonArray[i] as JSONObject
-                servers.add(
-                    Countries(
-                        `object`.getString("serverName"),
-                        `object`.getString("flag_url"),
-                        `object`.getString("ovpnConfiguration"),
-                        `object`.getString("vpnUserName"),
-                        `object`.getString("vpnPassword")
-                    )
-                )
-            }
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
-        return servers
-    }
+
+
 
     override fun onItemClick(country: Countries, position: Int) {
-//        if (Config.vip_subscription || Config.all_subscription) {
         viewModel.selectedItem.value = country
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("c", country)
@@ -230,17 +152,8 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         context?.startActivity(intent)
-//            } else {
-//                unblockServer()
-//            }
-
-
         adapterPREMIUM.setSelectedPosition(position)
-        adapterFREE.resetSelection()
         adapterPREMIUM.notifyDataSetChanged()
-        adapterFREE.notifyDataSetChanged()
-//        binding?.constraintLayout2?.setBackgroundResource(R.drawable.background_black_card)
 
-//        binding?.radio?.isChecked = false
     }
 }

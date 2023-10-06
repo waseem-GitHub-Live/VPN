@@ -324,7 +324,6 @@ class RateScreenFragment : Fragment(){
         try {
             OpenVPNThread.stop()
             updateUI("DISCONNECTED")
-            Toast.makeText(requireContext(), "vpn Disconnected", Toast.LENGTH_SHORT).show()
         } catch (e: java.lang.Exception) {
             e.printStackTrace()
         }
