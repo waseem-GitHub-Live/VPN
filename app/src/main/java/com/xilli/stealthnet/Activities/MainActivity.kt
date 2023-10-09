@@ -191,13 +191,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             Log.v("AD_TYPE", " null")
         }
     }
-
-    //    @Inject
-//    fun checkVPN(connMgr: ConnectivityManager): Boolean {
-//        //don't know why always returns null:
-//        val networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_VPN)
-//        return networkInfo?.isConnected ?: false
-//    }
     val isVpnActiveFlow = callbackFlow {
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -231,32 +224,27 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         //    inAppUpdate()
-
 //        viewModel = ViewModelProvider(this).get(SharedViewmodel::class.java)
 //        OneSignal.initWithContext(this)
 //        OneSignal.setAppId("a2be7720-a32b-415a-9db1-d50fdc54f069")
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
-
-        // Check if onboarding is completed
         val sharedPreferences = getSharedPreferences("onboarding", MODE_PRIVATE)
         val onboardingCompleted = sharedPreferences.getBoolean("completed", false)
 
         if (!onboardingCompleted) {
-            // Navigate to the OnboardingFragment
             navController.navigate(R.id.onboardingScreenFragment)
         } else {
             lifecycleScope.launch {
                 isVpnActiveFlow.collect { isVpnActive ->
                     if (isVpnActive) {
-                        // VPN is active, navigate to the RateScreenFragment
                         val navHostFragment =
                             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
                         val navController = navHostFragment.navController
                         navController.navigate(R.id.rateScreenFragment)
                     } else {
-                        navController.navigate(R.id.homeFragment)
+//                        navController.navigate(R.id.homeFragment)
                     }
                 }
             }

@@ -69,6 +69,10 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
+        val navController = findNavController()
+
+        // Call the navigation function from the ViewModel
+//        viewModel.navigateBasedOnVpnStatus(navController)
         loadLottieAnimation()
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
@@ -115,18 +119,7 @@ class HomeFragment : Fragment() {
                         binding?.power?.visibility = View.GONE
                         binding?.lottieAnimationView?.visibility = View.VISIBLE
 
-                        // Use a coroutine to delay the navigation
-                        lifecycleScope.launch {
-                            delay(8000) // Delay for 8 seconds
 
-//                            val navController = Navigation.findNavController(
-//                                requireActivity(),
-//                                R.id.nav_host_fragment
-//                            )
-//                            val action =
-//                                HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
-//                            navController.navigate(action)
-                        }
                     } else {
                         // VPN connection failed
                         showMessage("VPN connection failed", "error", context)

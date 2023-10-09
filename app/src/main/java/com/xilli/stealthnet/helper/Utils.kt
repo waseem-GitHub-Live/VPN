@@ -3,6 +3,9 @@ package com.xilli.stealthnet.helper
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -25,7 +28,9 @@ import com.xilli.stealthnet.ui.toolside
 import es.dmoral.toasty.Toasty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONException
@@ -295,6 +300,34 @@ object Utils: toolside() {
                 msg + "",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+    val isVpnActiveFlow = callbackFlow {
+        val connectivityManager =
+            getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager
+        if (connectivityManager == null) {
+            channel.close(IllegalStateException("connectivity manager is null"))
+            return@callbackFlow
+        } else {
+            val callback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    channel.trySend(true)
+                }
+
+                override fun onLost(network: Network) {
+                    channel.trySend(false)
+                }
+            }
+            connectivityManager.registerNetworkCallback(
+                NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                    .build(),
+                callback
+            )
+            awaitClose {
+                connectivityManager.unregisterNetworkCallback(callback)
+            }
         }
     }
 }

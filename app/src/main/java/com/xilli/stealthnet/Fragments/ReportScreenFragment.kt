@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.xilli.stealthnet.databinding.FragmentReportScreenBinding
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.helper.Utils
+import com.xilli.stealthnet.helper.Utils.countryName
 
 
 class ReportScreenFragment : Fragment() {
@@ -43,10 +45,9 @@ class ReportScreenFragment : Fragment() {
 
 
     }
-
     private fun datasheet() {
-//        binding?.textView9?.text = countryName
-//        binding?.connectionReportIp?.let { Utility.showIP(it) }
+        binding?.textView9?.text = countryName
+        binding?.connectionReportIp?.let { Utils.showIP(requireContext(),it) }
         val elapsedTime = arguments?.getString("elapsedTime")
         binding?.durationTime?.text = elapsedTime
         binding?.datausageTime?.text =  viewModel?.totalDataUsage1
@@ -55,16 +56,13 @@ class ReportScreenFragment : Fragment() {
 
     private fun clicklistener() {
         binding?.imageView5?.setOnClickListener {
-            val action = ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment()
-            findNavController().navigate(action)
+            findNavController().navigate(ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment())
         }
         binding?.backHome?.setOnClickListener {
-            val action = ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment()
-            findNavController().navigate(action)
+            findNavController().navigate(ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment())
         }
         binding?.connectionagain?.setOnClickListener {
-            val action = ReportScreenFragmentDirections.actionReportScreenFragmentToServerListFragment()
-            findNavController().navigate(action)
+            findNavController().navigate( ReportScreenFragmentDirections.actionReportScreenFragmentToServerListFragment())
         }
     }
 
