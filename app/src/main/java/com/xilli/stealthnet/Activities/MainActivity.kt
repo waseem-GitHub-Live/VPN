@@ -163,6 +163,8 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         val savedCountryName = sharedPreferences.getString("selectedCountryName", null)
         val savedFlagUrl = sharedPreferences.getString("selectedCountryFlagUrl", null)
         val savedovpn = sharedPreferences.getString("selectedOvpn", null)
+        val savedousername = sharedPreferences.getString("selectedusername", null)
+        val savedpassword = sharedPreferences.getString("selectedpassword", null)
         Log.d("SavedFlagUrl", "Saved flagUrl: $savedFlagUrl")
         // Check if the activity was started with an intent (e.g., when the user selects a country)
         val intent = intent
@@ -174,9 +176,9 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             } else {
                 showMessage("working", "success")
             }
-        } else if (savedCountryName != null && savedFlagUrl != null && savedovpn !=null) {
+        } else if (savedCountryName != null && savedFlagUrl != null && savedovpn !=null && savedousername !=null &&  savedpassword !=null ) {
             // Use the saved data if no intent data is available
-            selectedCountry = Countries(savedCountryName, savedFlagUrl, savedovpn)
+            selectedCountry = Countries(savedCountryName, savedFlagUrl, savedovpn, savedousername, savedpassword)
             updateUI("CONNECTED")
         }
 
@@ -329,14 +331,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         }
         return isVpnConnected(this)
     }
-    fun saveSelectedCountry(selectedCountry: Countries?) {
-        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.putString("selectedCountryName", selectedCountry?.country)
-        editor.putString("selectedFlagUrl", selectedCountry?.getFlagUrl1())
-        // Add any other data you want to save here
-        editor.apply()
-    }
+
 
     fun startVpn() {
         try {

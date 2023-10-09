@@ -110,6 +110,9 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
             editor.putString("selectedCountryName", country.getCountry1())
             editor.putString("selectedCountryFlagUrl", country.getFlagUrl1())
             editor.putString("selectedOvpn", country.getOvpn1())
+            editor.putString("selectedusername", country.getOvpnUserName1())
+            editor.putString("selectedpassword", country.getOvpnUserPassword1())
+
         } else {
             // If no item is selected, clear the saved data
             editor.remove("selectedCountryName")
