@@ -6,33 +6,24 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.IntentSender.SendIntentException
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.PersistableBundle
 import android.os.RemoteException
 import android.text.TextUtils
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.findNavController
-import com.airbnb.lottie.LottieAnimationView
-import com.airbnb.lottie.LottieDrawable
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.SkuType
 import com.android.billingclient.api.BillingClientStateListener
@@ -41,52 +32,42 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
-import com.android.volley.Request
-import com.android.volley.toolbox.StringRequest
-import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
-import com.facebook.ads.AdSettings
-import com.facebook.ads.AudienceNetworkAds
-import com.google.android.material.navigation.NavigationView
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.tasks.OnSuccessListener
-import com.onesignal.OneSignal
 import com.xilli.stealthnet.Config
 import com.xilli.stealthnet.Fragments.HomeFragment
-import com.xilli.stealthnet.Fragments.HomeFragmentDirections
+import android.Manifest
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.helper.OnVpnConnectedListener
 import com.xilli.stealthnet.helper.Utils
-import com.xilli.stealthnet.helper.Utils.connectBtnTextView
-import com.xilli.stealthnet.helper.Utils.connectionStateTextView
 import com.xilli.stealthnet.helper.Utils.flagName
 import com.xilli.stealthnet.helper.Utils.imgFlag
 import com.xilli.stealthnet.helper.Utils.isConnected
 import com.xilli.stealthnet.helper.Utils.isVpnConnected
-import com.xilli.stealthnet.helper.Utils.ivConnectionStatusImage
-import com.xilli.stealthnet.helper.Utils.lottieAnimationView
-import com.xilli.stealthnet.helper.Utils.showMessage
 import com.xilli.stealthnet.helper.Utils.textDownloading
 import com.xilli.stealthnet.helper.Utils.textUploading
 import com.xilli.stealthnet.helper.Utils.timerTextView
-import com.xilli.stealthnet.helper.Utils.tvConnectionStatus
 import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
 import es.dmoral.toasty.Toasty
-import kotlinx.android.synthetic.main.fragment_home.imageView4
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
+import pub.devrel.easypermissions.EasyPermissions
 import top.oneconnectapi.app.OpenVpnApi
 import top.oneconnectapi.app.core.OpenVPNThread
-import java.net.NetworkInterface
 import java.util.Arrays
 import java.util.Locale
 import java.util.Objects
 
-class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener{
+
+class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener,  EasyPermissions.PermissionCallbacks {
     private val locale: Locale? = null
     private var isFirst = true
     private val vpnThread = OpenVPNThread()
@@ -211,20 +192,51 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         }
     }
 
+    //    @Inject
+//    fun checkVPN(connMgr: ConnectivityManager): Boolean {
+//        //don't know why always returns null:
+//        val networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_VPN)
+//        return networkInfo?.isConnected ?: false
+//    }
+    val isVpnActiveFlow = callbackFlow {
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        if (connectivityManager == null) {
+            channel.close(IllegalStateException("connectivity manager is null"))
+            return@callbackFlow
+        } else {
+            val callback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    channel.trySend(true)
+                }
 
+                override fun onLost(network: Network) {
+                    channel.trySend(false)
+                }
+            }
+            connectivityManager.registerNetworkCallback(
+                NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                    .build(),
+                callback
+            )
+            awaitClose {
+                connectivityManager.unregisterNetworkCallback(callback)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-    //    inAppUpdate()
-        val homeFragment = supportFragmentManager.findFragmentByTag("homeFragmentTag") as HomeFragment?
-//        homeFragment?.setConnectBtnClickListener()
-        connectBtnTextView?.setOnClickListener {
-        }
+        //    inAppUpdate()
+
 //        viewModel = ViewModelProvider(this).get(SharedViewmodel::class.java)
 //        OneSignal.initWithContext(this)
 //        OneSignal.setAppId("a2be7720-a32b-415a-9db1-d50fdc54f069")
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
 
         // Check if onboarding is completed
@@ -235,8 +247,19 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             // Navigate to the OnboardingFragment
             navController.navigate(R.id.onboardingScreenFragment)
         } else {
-            // Navigate to the HomeFragment
-            navController.navigate(R.id.homeFragment)
+            lifecycleScope.launch {
+                isVpnActiveFlow.collect { isVpnActive ->
+                    if (isVpnActive) {
+                        // VPN is active, navigate to the RateScreenFragment
+                        val navHostFragment =
+                            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+                        val navController = navHostFragment.navController
+                        navController.navigate(R.id.rateScreenFragment)
+                    } else {
+                        navController.navigate(R.id.homeFragment)
+                    }
+                }
+            }
         }
         val countryName: String? = intent.getStringExtra("countryName")
         val flagUrl: String? = intent.getStringExtra("flagUrl")
@@ -244,7 +267,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         Utils.flagUrl = flagUrl
     }
 
-   fun disconnectFromVpn() {
+    fun disconnectFromVpn() {
         try {
             OpenVPNThread.stop()
             updateUI("DISCONNECTED")
@@ -335,21 +358,40 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             e.printStackTrace()
         }
     }
+
     override fun onResume() {
         super.onResume()
         // Register the broadcast receiver in onResume
         val intentFilter = IntentFilter("your.vpn.state.action")
         registerReceiver(broadcastReceiver, intentFilter)
     }
+
     override fun onPause() {
         super.onPause()
         // Unregister the broadcast receiver in onPause
         unregisterReceiver(broadcastReceiver)
     }
+    private fun hasNotificationPermission(): Boolean {
+        return EasyPermissions.hasPermissions(this, Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun notificationPermissionChecker() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission()) {
+            EasyPermissions.requestPermissions(
+                this,
+                getString(R.string.notificationPermission),
+                0,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+        }
+    }
 
     private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionChecker()
+                }
                 val vpnState = intent.getStringExtra("state")
                 if (vpnState != null) {
                     if (vpnState == "CONNECTED") {
@@ -409,15 +451,17 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             }
         }
     }
+
     override fun onDestroy() {
         super.onDestroy()
 //        disconnectFromVpn()
     }
+
     fun isVPNConnected(): Boolean {
         return isConnected // Assuming isConnected is a variable indicating the VPN state
     }
 
-   fun checkSelectedCountry() {
+    fun checkSelectedCountry() {
         if (selectedCountry == null) {
             updateUI("DISCONNECT")
             showMessage("Please select a server first", "")
@@ -430,16 +474,19 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
     companion object {
 
         var selectedCountry: Countries? = null
+
         @JvmField
         var type: String? = ""
 
         @JvmField
         var indratech_fast_27640849_ad_banner_id: String? = ""
+
         @JvmField
         var admob_interstitial_id: String? = ""
 
         @JvmField
         var indratech_fast_27640849_fb_native_id: String? = ""
+
         @JvmField
         var indratech_fast_27640849_fb_interstitial_id: String? = ""
 
@@ -455,7 +502,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 
     fun btnConnectDisconnect() {
         if (Utils.STATUS != "DISCONNECTED") {
-            showMessage("Wait","success")
+            showMessage("Wait", "success")
         } else {
             if (!Utility.isOnline(applicationContext)) {
                 showMessage("No Internet Connection", "error")
@@ -466,7 +513,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
     }
 
     fun checkRemainingTraffic() {}
-
 
 
     fun disconnectAlert() {
@@ -528,6 +574,13 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         timerTextView?.text = duration
     }
 
+    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
+        TODO("Not yet implemented")
+    }
 
 
 }

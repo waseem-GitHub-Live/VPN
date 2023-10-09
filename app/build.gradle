@@ -155,4 +155,6 @@ dependencies {
     implementation 'com.github.oneconnectapi:OneConnectLib:v1.0.9'
     // OneConnect Implementation
     implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+
+    implementation "pub.devrel:easypermissions:3.0.0"
 }

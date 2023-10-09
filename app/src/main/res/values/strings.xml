@@ -70,4 +70,5 @@
     <string name="description_onboarding_screen">StealthNet VPN has always been committed to protecting your privacy and your data. The European Union’s General Data Protection Regulation has prompted us to review our policies and make sure that we are doing the right thing for all of our users worldwide.</string>
     <string name="description_link_terms_and_condition">Please read and accept our</string>
     <string name="name_app">StealthNet</string>
+    <string name="notificationPermission">Permission</string>
 </resources>

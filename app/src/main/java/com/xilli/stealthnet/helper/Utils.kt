@@ -1,10 +1,8 @@
 package com.xilli.stealthnet.helper
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
-import android.net.VpnService
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -12,18 +10,13 @@ import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.recyclerview.widget.RecyclerView
 import com.airbnb.lottie.LottieAnimationView
-import com.airbnb.lottie.LottieDrawable
 import com.android.volley.Request
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.facebook.ads.AdView
 import com.facebook.ads.NativeAdLayout
-import com.xilli.stealthnet.Activities.MainActivity
-import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.Constants
 import com.xilli.stealthnet.model.Countries
@@ -306,5 +299,4 @@ object Utils: toolside() {
             ).show()
         }
     }
-
 }
