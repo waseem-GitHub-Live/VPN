@@ -1,4 +1,4 @@
-package com.xilli.stealthnet.ui.viewmodels
+package com.xilli.stealthnet.Fragments.viewmodels
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -53,13 +53,4 @@ class SharedViewmodel : ViewModel() {
 
     val selectedItem: MutableLiveData<Countries> = MutableLiveData()
 
-    private val isConnectedLiveData = MutableLiveData<Boolean>()
-
-    fun setVPNStatus(isConnected: Boolean) {
-        isConnectedLiveData.value = isConnected
-    }
-
-    fun isConnectedToVPN(): LiveData<Boolean> {
-        return isConnectedLiveData
-    }
 }

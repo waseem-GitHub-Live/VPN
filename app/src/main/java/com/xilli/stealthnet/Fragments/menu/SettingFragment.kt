@@ -7,26 +7,19 @@ import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
-import android.os.Binder
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Switch
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.xilli.stealthnet.Activities.MyBackgroundService
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.databinding.FragmentSettingBinding
 import com.xilli.stealthnet.helper.Utils
-import com.xilli.stealthnet.helper.Utils.startService
-import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
-import top.oneconnectapi.app.api.OneConnect
-import top.oneconnectapi.app.core.OpenVPNService
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import top.oneconnectapi.app.core.OpenVPNThread
 
 

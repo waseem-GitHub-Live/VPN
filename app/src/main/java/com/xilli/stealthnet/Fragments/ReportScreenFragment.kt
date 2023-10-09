@@ -9,7 +9,7 @@ import androidx.activity.addCallback
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.xilli.stealthnet.databinding.FragmentReportScreenBinding
-import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 
 
 class ReportScreenFragment : Fragment() {

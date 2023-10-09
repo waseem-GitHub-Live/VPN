@@ -10,23 +10,20 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity
-import com.xilli.stealthnet.AdapterWrappers.SearchView_Free_Adapter
 import com.xilli.stealthnet.AdapterWrappers.SearchView_Premium_Adapter
 import com.xilli.stealthnet.R
-import com.xilli.stealthnet.Utils.Constants
 import com.xilli.stealthnet.databinding.FragmentServerListBinding
 import com.xilli.stealthnet.helper.Utils.loadServers
 import com.xilli.stealthnet.helper.Utils.loadServersvip
 import com.xilli.stealthnet.model.Countries
-import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
+import kotlinx.coroutines.launch
 
 
 class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickListener {
@@ -40,6 +37,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     val viewModel: SharedViewmodel by viewModels()
     val premiumServers: List<Countries> by lazy { loadServersvip() }
     val freeServers: List<Countries> by lazy { loadServers() }
+    private var lastSelectedItem: Countries? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

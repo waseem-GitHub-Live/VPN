@@ -54,7 +54,7 @@ import com.xilli.stealthnet.helper.Utils.textUploading
 import com.xilli.stealthnet.helper.Utils.timerTextView
 import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
-import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import es.dmoral.toasty.Toasty
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow

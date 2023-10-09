@@ -14,7 +14,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
@@ -23,7 +22,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
-import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentRateScreenBinding
@@ -31,7 +29,7 @@ import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.showIP
 import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
-import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import top.oneconnectapi.app.core.OpenVPNThread
 import kotlin.math.abs
 
@@ -75,24 +73,13 @@ class RateScreenFragment : Fragment(){
         binding = FragmentRateScreenBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
         binding?.lifecycleOwner = viewLifecycleOwner
-        if (savedInstanceState != null) {
-            // Restore saved data
-            elapsedTimeMillis = savedInstanceState.getLong("elapsedTimeMillis", 0)
-            rxBytes = savedInstanceState.getLong("rxBytes", 0)
-            txBytes = savedInstanceState.getLong("txBytes", 0)
-            countryName = savedInstanceState.getString("countryName")
-            flagUrl = savedInstanceState.getString("flagUrl")
-        }
+        val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val selectedCountryName = sharedPrefs.getString("selectedCountryName", null)
+        val selectedCountryFlagUrl = sharedPrefs.getString("selectedCountryFlagUrl", null)
 
-        // Populate UI elements with restored data
-        binding?.timeline?.text = formatElapsedTime(elapsedTimeMillis)
-        binding?.textView4?.text = formatBytes(rxBytes)
-        binding?.uploaddata?.text = formatBytes(txBytes)
-        binding?.flagName?.text = countryName
-        if (flagUrl != null) {
-            Glide.with(this)
-                .load(flagUrl)
-                .into(binding?.flagimageView!!)
+        if (selectedCountryName != null && selectedCountryFlagUrl != null) {
+            val selectedItem = Countries(selectedCountryName, selectedCountryFlagUrl, "", "", "")
+            viewModel?.selectedItem?.value = selectedItem
         }
         return binding?.root
     }
@@ -130,14 +117,40 @@ class RateScreenFragment : Fragment(){
         return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
     private fun datasheet() {
-        if (countryName1 != null && flagUrl1 != null) {
-            binding?.flagimageView?.let {
-                Glide.with(this)
-                    .load(flagUrl1)
-                    .into(it)
+//        if (countryName1 != null && flagUrl1 != null) {
+//            binding?.flagimageView?.let {
+//                Glide.with(requireContext())
+//                    .load(flagUrl1)
+//                    .into(it)
+//            }
+//            binding?.flagName?.text = countryName1
+//        }
+        viewModel?.selectedItem?.observe(viewLifecycleOwner) { selectedItem ->
+            saveSelectedCountry(selectedItem)
+            selectedItem?.let { item ->
+                binding?.flagName?.text = item.getCountry1()
+                binding?.flagimageView?.let {
+                    Glide.with(requireContext())
+                        .load(item.getFlagUrl1())
+                        .into(it)
+                }
             }
-            binding?.flagName?.text = countryName1
         }
+    }
+    private fun saveSelectedCountry(country: Countries?) {
+        val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val editor = sharedPrefs.edit()
+
+        if (country != null) {
+            editor.putString("selectedCountryName", country.getCountry1())
+            editor.putString("selectedCountryFlagUrl", country.getFlagUrl1())
+        } else {
+            // If no item is selected, clear the saved data
+            editor.remove("selectedCountryName")
+            editor.remove("selectedCountryFlagUrl")
+        }
+
+        editor.apply()
     }
     override fun onResume() {
         super.onResume()

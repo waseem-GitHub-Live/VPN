@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.VpnService
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,12 +20,10 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.findNavController
-import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieDrawable
 import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity
@@ -35,17 +32,12 @@ import com.xilli.stealthnet.Activities.Utility
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentHomeBinding
-import com.xilli.stealthnet.helper.OnVpnConnectedListener
 import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.getIntent
 import com.xilli.stealthnet.helper.Utils.isConnected
-import com.xilli.stealthnet.helper.Utils.isVpnConnected
 import com.xilli.stealthnet.helper.Utils.showMessage
-import com.xilli.stealthnet.model.Countries
-import com.xilli.stealthnet.ui.viewmodels.SharedViewmodel
-import com.xilli.stealthnet.ui.viewmodels.VpnViewModel
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import es.dmoral.toasty.Toasty
-import kotlinx.android.synthetic.main.fragment_home.imageView4
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.oneconnectapi.app.core.OpenVPNThread
@@ -168,6 +160,8 @@ class HomeFragment : Fragment() {
                         Utils.updateUI("disconnected") // You can update UI accordingly
                         isConnected = false
                         binding?.connect?.text = "Disconnected"
+                        binding?.power?.visibility = View.VISIBLE
+                        binding?.lottieAnimationView?.visibility = View.GONE
                         showMessage("Select AGain Please!!", "error")
                     }
                     Log.v("yoo", vpnState)

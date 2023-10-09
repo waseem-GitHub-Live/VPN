@@ -82,9 +82,7 @@ object Utils: toolside() {
 
     var STATUS: String? = "DISCONNECTED"
     fun showIP(context: Context, textView: TextView) {
-        val scope = CoroutineScope(Dispatchers.Main)
-        scope.launch {
-            delay(1000)
+
             val queue = Volley.newRequestQueue(context)
             val urlip = "https://checkip.amazonaws.com/"
 
@@ -98,7 +96,7 @@ object Utils: toolside() {
                 }
             )
             queue.add(stringRequest)
-        }
+
     }
      fun loadServers(): List<Countries> {
         val servers = ArrayList<Countries>()
