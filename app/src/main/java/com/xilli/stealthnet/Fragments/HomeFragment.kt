@@ -37,6 +37,7 @@ import com.xilli.stealthnet.helper.Utils.getIntent
 import com.xilli.stealthnet.helper.Utils.isConnected
 import com.xilli.stealthnet.helper.Utils.showMessage
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.helper.Utils.getSharedPreferences
 import es.dmoral.toasty.Toasty
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -101,6 +102,7 @@ class HomeFragment : Fragment() {
                 noconnectionD()
                 binding?.connect?.text = "Wait"
                 showMessage("Connect to the internet and start again", "error", context)
+
             } else if (selectedCountry != null) {
                 showMessage("VPN is Connecting WAIT", "success", context)
                 binding?.connect?.text = "Authenticating"

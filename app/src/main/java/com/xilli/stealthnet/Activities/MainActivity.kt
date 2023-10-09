@@ -146,6 +146,8 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 
     override fun onStart() {
         super.onStart()
+
+        // Register the broadcast receiver and initialize the billing client
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
         billingClient = BillingClient
@@ -155,42 +157,43 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             .build()
 
         connectToBillingService()
+
+        // Retrieve the selected country data if it exists
+        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val savedCountryName = sharedPreferences.getString("selectedCountryName", null)
+        val savedFlagUrl = sharedPreferences.getString("selectedCountryFlagUrl", null)
+        val savedovpn = sharedPreferences.getString("selectedOvpn", null)
+        Log.d("SavedFlagUrl", "Saved flagUrl: $savedFlagUrl")
+        // Check if the activity was started with an intent (e.g., when the user selects a country)
         val intent = intent
-        if (getIntent().extras != null) {
-            selectedCountry = getIntent().extras?.getParcelable("c")
+        if (intent.extras != null) {
+            selectedCountry = intent.extras?.getParcelable("c")
             updateUI("LOAD")
             if (!Utility.isOnline(applicationContext)) {
                 showMessage("No Internet Connection", "error")
             } else {
                 showMessage("working", "success")
             }
-        } else {
-            if (selectedCountry != null) {
-                updateUI("CONNECTED")
-                imgFlag?.let {
-                    Glide.with(this)
-                        .load(selectedCountry?.flagUrl)
-                        .into(it)
-                }
-                flagName?.text = selectedCountry?.country
-
-            }
+        } else if (savedCountryName != null && savedFlagUrl != null && savedovpn !=null) {
+            // Use the saved data if no intent data is available
+            selectedCountry = Countries(savedCountryName, savedFlagUrl, savedovpn)
+            updateUI("CONNECTED")
         }
+
+        // Handle other intent data and initialization as needed
         if (intent.getStringExtra("type") != null) {
             type = intent.getStringExtra("type")
-            indratech_fast_27640849_ad_banner_id =
-                intent.getStringExtra("indratech_fast_27640849_ad_banner")
+            indratech_fast_27640849_ad_banner_id = intent.getStringExtra("indratech_fast_27640849_ad_banner")
             admob_interstitial_id = intent.getStringExtra("admob_interstitial")
-            indratech_fast_27640849_fb_native_id =
-                intent.getStringExtra("indratech_fast_27640849_fb_native")
-            indratech_fast_27640849_fb_interstitial_id =
-                intent.getStringExtra("indratech_fast_27640849_fb_interstitial")
+            indratech_fast_27640849_fb_native_id = intent.getStringExtra("indratech_fast_27640849_fb_native")
+            indratech_fast_27640849_fb_interstitial_id = intent.getStringExtra("indratech_fast_27640849_fb_interstitial")
         }
         if (TextUtils.isEmpty(type)) {
             type = ""
             Log.v("AD_TYPE", " null")
         }
     }
+
     val isVpnActiveFlow = callbackFlow {
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -325,6 +328,14 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             showMessage("No Internet Connection", "error")
         }
         return isVpnConnected(this)
+    }
+    fun saveSelectedCountry(selectedCountry: Countries?) {
+        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putString("selectedCountryName", selectedCountry?.country)
+        editor.putString("selectedFlagUrl", selectedCountry?.getFlagUrl1())
+        // Add any other data you want to save here
+        editor.apply()
     }
 
     fun startVpn() {

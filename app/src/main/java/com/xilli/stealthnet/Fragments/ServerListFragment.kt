@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -108,6 +109,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         if (country != null) {
             editor.putString("selectedCountryName", country.getCountry1())
             editor.putString("selectedCountryFlagUrl", country.getFlagUrl1())
+            editor.putString("selectedOvpn", country.getOvpn1())
         } else {
             // If no item is selected, clear the saved data
             editor.remove("selectedCountryName")
@@ -142,6 +144,10 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
 
     override fun onItemClick(country: Countries, position: Int) {
         viewModel.selectedItem.value = country
+        Log.d("FlagUrlDebug", "FlagUrl to be saved: ${country.getFlagUrl1()}")
+        saveSelectedCountry(country)
+
+
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("c", country)
         intent.putExtra("type", MainActivity.type)
