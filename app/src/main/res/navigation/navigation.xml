@@ -25,6 +25,9 @@
         <action
             android:id="@+id/action_homeFragment_to_languageFragment"
             app:destination="@id/languageFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_premiumFragment"
+            app:destination="@id/premiumFragment" />
     </fragment>
     <fragment
         android:id="@+id/rateScreenFragment"
@@ -49,6 +52,9 @@
         <action
             android:id="@+id/action_rateScreenFragment_to_languageFragment"
             app:destination="@id/languageFragment" />
+        <action
+            android:id="@+id/action_rateScreenFragment_to_premiumFragment"
+            app:destination="@id/premiumFragment" />
     </fragment>
     <fragment
         android:id="@+id/reportScreenFragment"
@@ -102,4 +108,9 @@
             android:id="@+id/action_onboardingScreenFragment_to_homeFragment"
             app:destination="@id/homeFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/premiumFragment"
+        android:name="com.xilli.stealthnet.Fragments.PremiumFragment"
+        android:label="PremiumFragment"
+        tools:layout="@layout/fragment_premium"/>
 </navigation>

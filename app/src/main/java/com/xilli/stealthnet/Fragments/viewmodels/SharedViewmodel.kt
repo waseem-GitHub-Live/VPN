@@ -1,24 +1,16 @@
 package com.xilli.stealthnet.Fragments.viewmodels
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
-
+import android.content.SharedPreferences
+import android.os.CountDownTimer
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import com.xilli.stealthnet.R
-import com.xilli.stealthnet.helper.Utils.getSystemService
 import com.xilli.stealthnet.helper.Utils.isVpnActiveFlow
+import com.xilli.stealthnet.helper.Utils.sharedPreferences
 import com.xilli.stealthnet.model.Countries
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 
 class SharedViewmodel : ViewModel() {
     private val averageRxSpeedLiveData = MutableLiveData<String>()
@@ -42,6 +34,7 @@ class SharedViewmodel : ViewModel() {
     var totalDataUsage1: String = ""
     private var startTimeMillis = 0L
     private var isTimerRunning = false
+    private var remainingTimeMillis = 30 * 60 * 1000L
 
     fun startTimer() {
         if (!isTimerRunning) {
@@ -52,24 +45,22 @@ class SharedViewmodel : ViewModel() {
 
     fun stopTimer() {
         isTimerRunning = false
+        // Calculate and store the remaining time when stopping the timer
+        remainingTimeMillis -= System.currentTimeMillis() - startTimeMillis
     }
 
-    fun getElapsedTime(): Long {
+    fun getRemainingTime(): Long {
         return if (isTimerRunning) {
-            System.currentTimeMillis() - startTimeMillis
+            remainingTimeMillis - (System.currentTimeMillis() - startTimeMillis)
         } else {
-            0L
+            remainingTimeMillis
         }
     }
     var isSwitchChecked = MutableLiveData<Boolean>()
     var isSwitchCheckedauto = MutableLiveData<Boolean>()
     var isSwitchCheckedimprove = MutableLiveData<Boolean>()
     var isSwitchCheckedsavedata = MutableLiveData<Boolean>()
-    fun <T> Flow<T>.asLiveData(): LiveData<T> {
-        val liveData = MutableLiveData<T>()
-        this.onEach { value -> liveData.value = value }
-        return liveData
-    }
+
     val selectedItem: MutableLiveData<Countries> = MutableLiveData()
-  val isVpnActiveLiveData: LiveData<Boolean> = isVpnActiveFlow.asLiveData()
+
 }

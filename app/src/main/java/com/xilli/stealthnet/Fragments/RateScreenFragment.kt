@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -40,31 +41,20 @@ class RateScreenFragment : Fragment(){
     private var txBytes: Long = 0
     private var binding: FragmentRateScreenBinding? = null
     private val mHandler = Handler()
-    private var startTimeMillis: Long = 0
     private var mStartRX: Long = 0
     private var mStartTX: Long = 0
     private var backPressedOnce = false
-    private var isVpnStarted = false
     private lateinit var onBackPressedCallback: OnBackPressedCallback
     private var countdownValue = 4
     private var countDownTimer: CountDownTimer? = null
     private var viewModel: SharedViewmodel?=null
-    private val handler = Handler(Looper.getMainLooper())
-    var selectedCountry: Countries? = null
-    private var isFirst = true
     private var countryName: String? = null
     private var flagUrl: String? = null
-    val countryName1 = Utils.countryName
-    val flagUrl1 = Utils.flagUrl
     companion object {
         var type = ""
-        val activeServer = ActiveServer()
-        var STATUS = "DISCONNECTED"
+        const val KEY_REMAINING_TIME = "remaining_time"
     }
-    @JvmField
-    var flagName: TextView? = null
-    @JvmField
-    var imgFlag: ImageView? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -87,28 +77,30 @@ class RateScreenFragment : Fragment(){
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val storedStartTime = sharedPreferences.getLong("startTime", 0)
         clicklistner()
         setupBackPressedCallback()
         startRunnable()
         updateTrafficStats()
         datasheet()
         binding?.vpnIp?.let { showIP(requireContext(),it) }
-        terraformed()
+        startCountdownTimer()
 
     }
 
-    private fun terraformed() {
-        viewModel?.startTimer()
-        mHandler.post(object : Runnable {
-            override fun run() {
-                val elapsedTimeMillis = viewModel?.getElapsedTime()
-                val elapsedTimeFormatted = elapsedTimeMillis?.let { formatElapsedTime(it) }
+    private fun startCountdownTimer() {
+        val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
+        viewModel.startTimer()
+        countDownTimer = object : CountDownTimer(viewModel.getRemainingTime(), 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                // Update the UI with the remaining time
+                val elapsedTimeFormatted = formatElapsedTime(millisUntilFinished)
                 binding?.timeline?.text = elapsedTimeFormatted
-                mHandler.postDelayed(this, 1000)
             }
-        })
+
+            override fun onFinish() {
+                binding?.timeline?.text = "00:00:00"
+            }
+        }.start()
     }
     private fun formatElapsedTime(elapsedTimeMillis: Long): String {
         val seconds = (elapsedTimeMillis / 1000) % 60
@@ -117,14 +109,7 @@ class RateScreenFragment : Fragment(){
         return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
     private fun datasheet() {
-//        if (countryName1 != null && flagUrl1 != null) {
-//            binding?.flagimageView?.let {
-//                Glide.with(requireContext())
-//                    .load(flagUrl1)
-//                    .into(it)
-//            }
-//            binding?.flagName?.text = countryName1
-//        }
+
         viewModel?.selectedItem?.observe(viewLifecycleOwner) { selectedItem ->
             saveSelectedCountry(selectedItem)
             selectedItem?.let { item ->
@@ -137,6 +122,7 @@ class RateScreenFragment : Fragment(){
             }
         }
     }
+
     private fun saveSelectedCountry(country: Countries?) {
         val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val editor = sharedPrefs.edit()
@@ -151,12 +137,6 @@ class RateScreenFragment : Fragment(){
         }
 
         editor.apply()
-    }
-    override fun onResume() {
-        super.onResume()
-
-        // Check if the vpnService reference is not null
-//        vpnService?.updateStartTime(System.currentTimeMillis())
     }
 
     private fun startRunnable() {
@@ -261,6 +241,9 @@ class RateScreenFragment : Fragment(){
             val drawerLayout = requireActivity().findViewById<DrawerLayout>(R.id.constraintlayoutmenu)
             drawerLayout.openDrawer(GravityCompat.START)
         }
+        binding?.premimunbutton2?.setOnClickListener {
+            findNavController().navigate(RateScreenFragmentDirections.actionRateScreenFragmentToPremiumFragment())
+        }
         binding?.crosscancel?.setOnClickListener {
             disconnectmethod()
         }
@@ -348,7 +331,7 @@ class RateScreenFragment : Fragment(){
         }
     }
     override fun onDestroyView() {
-        countDownTimer?.cancel()
+//        countDownTimer?.cancel()
         mHandler.removeCallbacks(mRunnable)
         onBackPressedCallback.isEnabled = false
         onBackPressedCallback.remove()
@@ -362,5 +345,7 @@ class RateScreenFragment : Fragment(){
         outState.putLong("txBytes", txBytes)
         outState.putString("countryName", countryName)
         outState.putString("flagUrl", flagUrl)
+        val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
+        outState.putLong(KEY_REMAINING_TIME, viewModel.getRemainingTime())
     }
 }

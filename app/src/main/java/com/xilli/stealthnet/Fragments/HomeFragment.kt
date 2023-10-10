@@ -58,6 +58,7 @@ class HomeFragment : Fragment() {
     companion object {
         var type = ""
     }
+
     @JvmField
     var flagName: TextView? = null
 
@@ -208,6 +209,7 @@ class HomeFragment : Fragment() {
 
         }
     }
+
     fun updateConnectionStatus(
         duration: String?,
         lastPacketReceive: String?,
@@ -221,6 +223,7 @@ class HomeFragment : Fragment() {
         Utils.textUploading?.text = byteoutKb
         Utils.timerTextView?.text = duration
     }
+
     fun showMessage(msg: String?, type: String, context: Context?) {
         // Check if context is not null before using it
         context?.let {
@@ -259,6 +262,7 @@ class HomeFragment : Fragment() {
 
         alertDialog.show()
     }
+
     override fun onResume() {
         super.onResume()
         binding?.lottieAnimationView?.playAnimation()
@@ -322,9 +326,9 @@ class HomeFragment : Fragment() {
                 requireActivity().findViewById<DrawerLayout>(R.id.constraintlayoutmenu)
             drawerLayout.openDrawer(GravityCompat.START)
         }
-
-
-
+        binding?.premiumbutton?.setOnClickListener {
+            findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToPremiumFragment())
+        }
         binding?.constraintLayout2?.setOnClickListener {
             findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToServerListFragment())
         }
