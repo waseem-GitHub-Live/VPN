@@ -1,19 +1,19 @@
 package com.xilli.stealthnet.Fragments
 
 import android.app.AlertDialog
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.net.TrafficStats
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
@@ -23,19 +23,19 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
+import com.xilli.stealthnet.Activities.CountDownService
 import com.xilli.stealthnet.R
-import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentRateScreenBinding
-import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.showIP
 import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import top.oneconnectapi.app.core.OpenVPNThread
+import java.util.Timer
+import java.util.TimerTask
 import kotlin.math.abs
 
-
-class RateScreenFragment : Fragment(){
+class RateScreenFragment : Fragment() {
     private var elapsedTimeMillis: Long = 0
     private var rxBytes: Long = 0
     private var txBytes: Long = 0
@@ -50,9 +50,32 @@ class RateScreenFragment : Fragment(){
     private var viewModel: SharedViewmodel?=null
     private var countryName: String? = null
     private var flagUrl: String? = null
+    private var isTimerRunning = false
     companion object {
         var type = ""
         const val KEY_REMAINING_TIME = "remaining_time"
+    }
+    private val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val timeLeft = intent?.getLongExtra("time_left", 0)
+            updateCountdownTextView(timeLeft)
+        }
+    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val filter = IntentFilter("COUNTDOWN_TICK")
+        requireContext().registerReceiver(receiver, filter)
+
+        // Check if the service is already running and stop it
+        if (isTimerRunning) {
+            val serviceIntent = Intent(requireContext(), CountDownService::class.java)
+            requireContext().stopService(serviceIntent)
+        }
+
+        // Start the service with the new timer
+        val serviceIntent = Intent(requireContext(), CountDownService::class.java)
+        requireContext().startService(serviceIntent)
+        isTimerRunning = true
     }
 
     override fun onCreateView(
@@ -83,31 +106,76 @@ class RateScreenFragment : Fragment(){
         updateTrafficStats()
         datasheet()
         binding?.vpnIp?.let { showIP(requireContext(),it) }
-        startCountdownTimer()
+//        startCountdownTimer()
 
     }
+    override fun onDestroy() {
+        super.onDestroy()
+        // Stop the CountdownService when the Fragment is destroyed
 
-    private fun startCountdownTimer() {
-        val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
-        viewModel.startTimer()
-        countDownTimer = object : CountDownTimer(viewModel.getRemainingTime(), 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                // Update the UI with the remaining time
-                val elapsedTimeFormatted = formatElapsedTime(millisUntilFinished)
-                binding?.timeline?.text = elapsedTimeFormatted
-            }
+            val serviceIntent = Intent(requireContext(), CountDownService::class.java)
+            requireContext().stopService(serviceIntent)
 
-            override fun onFinish() {
-                binding?.timeline?.text = "00:00:00"
-            }
-        }.start()
+        requireContext().unregisterReceiver(receiver)
     }
-    private fun formatElapsedTime(elapsedTimeMillis: Long): String {
-        val seconds = (elapsedTimeMillis / 1000) % 60
-        val minutes = (elapsedTimeMillis / (1000 * 60)) % 60
-        val hours = (elapsedTimeMillis / (1000 * 60 * 60)) % 24
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+
+    private fun updateCountdownTextView(timeLeft: Long?) {
+        val textViewCountdown = view?.findViewById<TextView>(R.id.timeline)
+        if (textViewCountdown != null && timeLeft != null) {
+            val minutes = (timeLeft / 1000) / 60
+            val seconds = (timeLeft / 1000) % 60
+            val countdownText = String.format("%02d:%02d", minutes, seconds)
+            textViewCountdown.text = countdownText
+        }
     }
+
+
+    //    private fun startCountdownTimer() {
+//        val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
+//        viewModel.startTimer()
+//
+//        timerTask = object : TimerTask() {
+//            override fun run() {
+//                activity?.runOnUiThread {
+//                    val remainingTime = viewModel.getRemainingTime()
+//                    if (remainingTime > 0) {
+//                        val elapsedTimeFormatted = formatElapsedTime(remainingTime)
+//                        binding?.timeline?.text = elapsedTimeFormatted
+//                    } else {
+//                        binding?.timeline?.text = "00:00:00"
+//                        timerTask?.cancel()
+//                    }
+//                }
+//            }
+//        }
+//
+//        timer.scheduleAtFixedRate(timerTask, 0, 1000)
+//    }
+//
+//    private fun formatElapsedTime(elapsedTimeMillis: Long): String {
+//        val seconds = (elapsedTimeMillis / 1000) % 60
+//        val minutes = (elapsedTimeMillis / (1000 * 60)) % 60
+//        val hours = (elapsedTimeMillis / (1000 * 60 * 60)) % 24
+//        return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+//    }
+//
+//    private fun stopCountdownTimer() {
+//        timerTask?.cancel()
+//        timer.purge()
+//        timerTask = null
+//    }
+//    private inner class TimeTask: TimerTask()
+//    {
+//        override fun run()
+//        {
+//            if(dataHelper.timerCounting())
+//            {
+//                val time = Date().time - dataHelper.startTime()!!.time
+//                binding.timeTV.text = timeStringFromLong(time)
+//            }
+//        }
+//    }
     private fun datasheet() {
 
         viewModel?.selectedItem?.observe(viewLifecycleOwner) { selectedItem ->
@@ -335,6 +403,7 @@ class RateScreenFragment : Fragment(){
         mHandler.removeCallbacks(mRunnable)
         onBackPressedCallback.isEnabled = false
         onBackPressedCallback.remove()
+//        requireContext().unbindService(connection)
         super.onDestroyView()
     }
     override fun onSaveInstanceState(outState: Bundle) {
@@ -348,4 +417,68 @@ class RateScreenFragment : Fragment(){
         val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
         outState.putLong(KEY_REMAINING_TIME, viewModel.getRemainingTime())
     }
+//    private val connection = object : ServiceConnection {
+//        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+//            val binder = service as CountDownService.LocalBinder
+//            countdownService = binder.getService()
+//            countdownService?.setCallback(this@RateScreenFragment)
+//            countdownService?.startCountdown()
+//            isBound = true
+//            Log.d("ServiceConnection", "Service connected")
+//        }
+//
+//        override fun onServiceDisconnected(name: ComponentName?) {
+//            countdownService = null
+//            isBound = false
+//            Log.d("ServiceConnection", "Service disconnected")
+//        }
+//    }
+
+
+//    override fun onActivityCreated(savedInstanceState: Bundle?) {
+//
+//        super.onActivityCreated(savedInstanceState)
+//        val intent = Intent(requireContext(), CountDownService::class.java)
+//        requireContext().bindService(intent, connection, Context.BIND_AUTO_CREATE)
+//    }
+//
+//    override fun onTimerTick(remainingTime: Long) {
+//        activity?.runOnUiThread {
+//            // Update the UI (TextView) here on the main (UI) thread
+//            binding?.timeline?.text = formatRemainingTime(remainingTime)
+//        }
+//    }
+//
+//    fun formatRemainingTime(remainingTime: Long): String {
+//        val minutes = remainingTime / 60000
+//        val seconds = (remainingTime % 60000) / 1000
+//        return String.format("%02d:%02d", minutes, seconds)
+//    }
+
+//    override fun onStop() {
+//        super.onStop()
+//        val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
+//        val remainingTime = viewModel.getRemainingTime()
+//
+//        val sharedPreferences = requireActivity().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
+//        val editor = sharedPreferences.edit()
+//        editor.putLong("remainingTime", remainingTime)
+//        editor.apply()
+//    }
+
+//    override fun onResume() {
+//        super.onResume()
+//        val sharedPreferences = requireActivity().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
+//
+//
+//            val remainingTime = sharedPreferences.getLong("remainingTime", 1L)
+//
+//            viewModel?.remainingTimeMillis = remainingTime
+//            if (remainingTime > 0) {
+//                startCountdownTimer()
+//            } else {
+//                // Handle the case when the timer has finished
+//            }
+//    }
 }
+

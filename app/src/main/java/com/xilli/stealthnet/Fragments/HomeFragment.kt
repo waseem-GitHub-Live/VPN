@@ -11,7 +11,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -19,8 +18,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.findNavController
@@ -36,45 +33,23 @@ import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.getIntent
 import com.xilli.stealthnet.helper.Utils.isConnected
 import com.xilli.stealthnet.helper.Utils.showMessage
-import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
-import com.xilli.stealthnet.helper.Utils.getSharedPreferences
 import es.dmoral.toasty.Toasty
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import top.oneconnectapi.app.core.OpenVPNThread
 import java.util.Objects
 
 class HomeFragment : Fragment() {
     private var binding: FragmentHomeBinding? = null
-    private val viewModel by viewModels<SharedViewmodel>()
     private var isFirst = true
     private var connectionStateTextView: TextView? = null
     private var timerTextView: TextView? = null
-    private var isButtonClicked = true
-    private var isNavigationInProgress = false
-    private val VPN_PERMISSION_REQUEST_CODE = 123
-    private val vpnThread = OpenVPNThread()
 
     companion object {
         var type = ""
     }
-
-    @JvmField
-    var flagName: TextView? = null
-
-    @JvmField
-    var imgFlag: ImageView? = null
-
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val navController = findNavController()
-
-        // Call the navigation function from the ViewModel
-//        viewModel.navigateBasedOnVpnStatus(navController)
         loadLottieAnimation()
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
@@ -89,6 +64,7 @@ class HomeFragment : Fragment() {
         clicklistner()
         backpressed()
         setConnectBtnClickListener()
+
         val countryName = arguments?.getString("countryName")
         val flagUrl = arguments?.getString("flagUrl")
     }

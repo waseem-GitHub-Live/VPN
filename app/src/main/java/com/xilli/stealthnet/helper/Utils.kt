@@ -302,32 +302,4 @@ object Utils: toolside() {
             ).show()
         }
     }
-    val isVpnActiveFlow = callbackFlow {
-        val connectivityManager =
-            getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager
-        if (connectivityManager == null) {
-            channel.close(IllegalStateException("connectivity manager is null"))
-            return@callbackFlow
-        } else {
-            val callback = object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    channel.trySend(true)
-                }
-
-                override fun onLost(network: Network) {
-                    channel.trySend(false)
-                }
-            }
-            connectivityManager.registerNetworkCallback(
-                NetworkRequest.Builder()
-                    .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
-                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-                    .build(),
-                callback
-            )
-            awaitClose {
-                connectivityManager.unregisterNetworkCallback(callback)
-            }
-        }
-    }
 }

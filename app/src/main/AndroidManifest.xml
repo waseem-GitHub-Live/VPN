@@ -45,7 +45,7 @@
             android:name="com.xilli.stealthnet.Activities.Servers"
        />
         <service
-            android:name=".Activities.MyBackgroundService"
+            android:name=".Activities.ConnectionStabilityService"
             android:enabled="true"
             android:exported="false" />
 
@@ -73,7 +73,10 @@
 
 
         <!-- OneSignal -->
-
+        <service
+            android:name=".Activities.CountDownService"
+            >
+        </service>
         <meta-data
             android:name="onesignal_app_id"
             android:value="${onesignal_app_id}" />

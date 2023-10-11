@@ -68,9 +68,7 @@ import java.util.Objects
 
 
 class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener,  EasyPermissions.PermissionCallbacks {
-    private val locale: Locale? = null
     private var isFirst = true
-    private val vpnThread = OpenVPNThread()
     private var billingClient: BillingClient? = null
     private val skusWithSkuDetails: MutableMap<String, SkuDetails> = HashMap()
     private val allSubs: List<String> = ArrayList(
@@ -81,6 +79,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             Config.all_yearly_id
         )
     )
+    var hasNavigated = false
     private val viewModel by viewModels<SharedViewmodel>()
     private var STATUS: String? = "DISCONNECTED"
     private var yourFragment: HomeFragment? = null
@@ -166,7 +165,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         val savedousername = sharedPreferences.getString("selectedusername", null)
         val savedpassword = sharedPreferences.getString("selectedpassword", null)
         Log.d("SavedFlagUrl", "Saved flagUrl: $savedFlagUrl")
-        // Check if the activity was started with an intent (e.g., when the user selects a country)
         val intent = intent
         if (intent.extras != null) {
             selectedCountry = intent.extras?.getParcelable("c")
@@ -177,22 +175,9 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
                 showMessage("working", "success")
             }
         } else if (savedCountryName != null && savedFlagUrl != null && savedovpn !=null && savedousername !=null &&  savedpassword !=null ) {
-            // Use the saved data if no intent data is available
+
             selectedCountry = Countries(savedCountryName, savedFlagUrl, savedovpn, savedousername, savedpassword)
             updateUI("CONNECTED")
-        }
-
-        // Handle other intent data and initialization as needed
-        if (intent.getStringExtra("type") != null) {
-            type = intent.getStringExtra("type")
-            indratech_fast_27640849_ad_banner_id = intent.getStringExtra("indratech_fast_27640849_ad_banner")
-            admob_interstitial_id = intent.getStringExtra("admob_interstitial")
-            indratech_fast_27640849_fb_native_id = intent.getStringExtra("indratech_fast_27640849_fb_native")
-            indratech_fast_27640849_fb_interstitial_id = intent.getStringExtra("indratech_fast_27640849_fb_interstitial")
-        }
-        if (TextUtils.isEmpty(type)) {
-            type = ""
-            Log.v("AD_TYPE", " null")
         }
     }
 
@@ -224,14 +209,9 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             }
         }
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        //    inAppUpdate()
-//        viewModel = ViewModelProvider(this).get(SharedViewmodel::class.java)
-//        OneSignal.initWithContext(this)
-//        OneSignal.setAppId("a2be7720-a32b-415a-9db1-d50fdc54f069")
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
@@ -242,14 +222,12 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             navController.navigate(R.id.onboardingScreenFragment)
         } else {
             lifecycleScope.launch {
-                isVpnActiveFlow.collect { isVpnActive ->
-                    if (isVpnActive) {
-                        val navHostFragment =
-                            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+                isVpnActiveFlow.collect { vpnActive ->
+                    if (!hasNavigated && vpnActive) {
+                        hasNavigated = true
+                        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
                         val navController = navHostFragment.navController
                         navController.navigate(R.id.rateScreenFragment)
-                    } else {
-//                        navController.navigate(R.id.homeFragment)
                     }
                 }
             }
@@ -269,30 +247,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         }
     }
 
-    private fun inAppUpdate() {
-        val appUpdateManager = AppUpdateManagerFactory.create(this@MainActivity)
-        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
-        appUpdateInfoTask.addOnSuccessListener(object : OnSuccessListener<AppUpdateInfo?> {
-
-
-            override fun onSuccess(result: AppUpdateInfo?) {
-                if (result?.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                    && result.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
-                ) {
-                    try {
-                        appUpdateManager.startUpdateFlowForResult(
-                            result,
-                            AppUpdateType.IMMEDIATE,
-                            this@MainActivity,
-                            11
-                        )
-                    } catch (e: SendIntentException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        })
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -355,14 +309,12 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 
     override fun onResume() {
         super.onResume()
-        // Register the broadcast receiver in onResume
         val intentFilter = IntentFilter("your.vpn.state.action")
         registerReceiver(broadcastReceiver, intentFilter)
     }
 
     override fun onPause() {
         super.onPause()
-        // Unregister the broadcast receiver in onPause
         unregisterReceiver(broadcastReceiver)
     }
     private fun hasNotificationPermission(): Boolean {
@@ -446,15 +398,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-//        disconnectFromVpn()
-    }
-
-    fun isVPNConnected(): Boolean {
-        return isConnected // Assuming isConnected is a variable indicating the VPN state
-    }
-
     fun checkSelectedCountry() {
         if (selectedCountry == null) {
             updateUI("DISCONNECT")
@@ -472,27 +415,9 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         @JvmField
         var type: String? = ""
 
-        @JvmField
-        var indratech_fast_27640849_ad_banner_id: String? = ""
-
-        @JvmField
-        var admob_interstitial_id: String? = ""
-
-        @JvmField
-        var indratech_fast_27640849_fb_native_id: String? = ""
-
-        @JvmField
-        var indratech_fast_27640849_fb_interstitial_id: String? = ""
-
     }
 
     private val mUIHandler = Handler(Looper.getMainLooper())
-    val mUIUpdateRunnable: Runnable = object : Runnable {
-        override fun run() {
-            checkRemainingTraffic()
-            mUIHandler.postDelayed(this, 10000)
-        }
-    }
 
     fun btnConnectDisconnect() {
         if (Utils.STATUS != "DISCONNECTED") {
@@ -504,31 +429,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
                 checkSelectedCountry()
             }
         }
-    }
-
-    fun checkRemainingTraffic() {}
-
-
-    fun disconnectAlert() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Do you want to disconnect?")
-        builder.setPositiveButton(
-            "Disconnect"
-        ) { _, _ ->
-            disconnectFromVpn()
-            Utils.STATUS = "DISCONNECTED"
-
-            textDownloading?.text = "0.0 kB/s"
-            textUploading?.text = "0.0 kB/s"
-
-            showMessage("Server Disconnected", "success")
-        }
-        builder.setNegativeButton(
-            "Cancel"
-        ) { _, _ ->
-            showMessage("VPN Remains Connected", "success")
-        }
-        builder.show()
     }
 
     fun showMessage(msg: String?, type: String) {
@@ -567,14 +467,10 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         textUploading?.text = byteoutKb
         timerTextView?.text = duration
     }
-
     override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
         TODO("Not yet implemented")
     }
-
     override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
         TODO("Not yet implemented")
     }
-
-
 }

@@ -24,7 +24,9 @@ import com.xilli.stealthnet.helper.Utils.loadServers
 import com.xilli.stealthnet.helper.Utils.loadServersvip
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.helper.Utils
 import kotlinx.coroutines.launch
+import top.oneconnectapi.app.core.OpenVPNThread
 
 
 class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickListener {
@@ -149,8 +151,7 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         viewModel.selectedItem.value = country
         Log.d("FlagUrlDebug", "FlagUrl to be saved: ${country.getFlagUrl1()}")
         saveSelectedCountry(country)
-
-
+        disconnectFromVpn()
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("c", country)
         intent.putExtra("type", MainActivity.type)
@@ -163,4 +164,13 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         adapterPREMIUM.notifyDataSetChanged()
 
     }
+    fun disconnectFromVpn() {
+        try {
+            OpenVPNThread.stop()
+            Utils.updateUI("DISCONNECTED")
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+    }
+
 }

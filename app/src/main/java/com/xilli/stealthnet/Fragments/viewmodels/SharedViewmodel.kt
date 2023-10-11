@@ -1,20 +1,14 @@
 package com.xilli.stealthnet.Fragments.viewmodels
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.os.CountDownTimer
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.xilli.stealthnet.helper.Utils.isVpnActiveFlow
-import com.xilli.stealthnet.helper.Utils.sharedPreferences
 import com.xilli.stealthnet.model.Countries
-import kotlinx.coroutines.flow.*
 
 class SharedViewmodel : ViewModel() {
     private val averageRxSpeedLiveData = MutableLiveData<String>()
     private val averageTxSpeedLiveData = MutableLiveData<String>()
+    var remainingTimeMillis = 30 * 60 * 1000L
 
     fun setAverageRxSpeed(speed: String) {
         averageRxSpeedLiveData.value = speed
@@ -34,7 +28,6 @@ class SharedViewmodel : ViewModel() {
     var totalDataUsage1: String = ""
     private var startTimeMillis = 0L
     private var isTimerRunning = false
-    private var remainingTimeMillis = 30 * 60 * 1000L
 
     fun startTimer() {
         if (!isTimerRunning) {

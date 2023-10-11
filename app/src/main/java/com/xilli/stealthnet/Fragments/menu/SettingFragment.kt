@@ -15,7 +15,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import com.xilli.stealthnet.Activities.MyBackgroundService
+import com.xilli.stealthnet.Activities.ConnectionStabilityService
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.databinding.FragmentSettingBinding
 import com.xilli.stealthnet.helper.Utils
@@ -80,11 +80,11 @@ class SettingFragment : Fragment() {
         binding?.improve?.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 viewModel.isSwitchCheckedimprove.value = isChecked
-                val serviceIntent = Intent(requireContext(), MyBackgroundService::class.java)
+                val serviceIntent = Intent(requireContext(), ConnectionStabilityService::class.java)
                 requireContext().startService(serviceIntent)
                 sharedPrefs.edit().putBoolean(IMPROVE_STATE_KEY, isChecked).apply()
             }else{
-                val serviceIntent = Intent(requireContext(), MyBackgroundService::class.java)
+                val serviceIntent = Intent(requireContext(), ConnectionStabilityService::class.java)
                 requireContext().stopService(serviceIntent)
             }
         }
@@ -148,7 +148,7 @@ class SettingFragment : Fragment() {
 
         }
         cancelButton.setOnClickListener {
-            val serviceIntent = Intent(requireContext(), MyBackgroundService::class.java)
+            val serviceIntent = Intent(requireContext(), ConnectionStabilityService::class.java)
             requireContext().stopService(serviceIntent)
             binding?.improve?.isChecked = false
             alertDialog.dismiss()
