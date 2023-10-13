@@ -67,7 +67,7 @@ import java.util.Locale
 import java.util.Objects
 
 
-class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClientStateListener,  EasyPermissions.PermissionCallbacks {
+class MainActivity : AppCompatActivity(),  EasyPermissions.PermissionCallbacks {
     private var isFirst = true
     private var billingClient: BillingClient? = null
     private val skusWithSkuDetails: MutableMap<String, SkuDetails> = HashMap()
@@ -79,107 +79,55 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             Config.all_yearly_id
         )
     )
+    val premiumServers: List<Countries> by lazy { Utils.loadServersvip() }
     var hasNavigated = false
     private val viewModel by viewModels<SharedViewmodel>()
     private var STATUS: String? = "DISCONNECTED"
     private var yourFragment: HomeFragment? = null
     private var vpnStateCallback: OnVpnConnectedListener? = null
-    private fun connectToBillingService() {
-        if (!billingClient?.isReady!!) {
-            billingClient?.startConnection(this)
-        }
-    }
-
-    override fun onBillingSetupFinished(billingResult: BillingResult) {
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            querySkuDetailsAsync(
-                SkuType.SUBS,
-                allSubs
-            )
-            queryPurchases()
-        }
-    }
-
-    override fun onBillingServiceDisconnected() {
-        connectToBillingService()
-    }
-
-    override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {}
-    private fun queryPurchases() {
-        val result = billingClient?.queryPurchases(SkuType.SUBS)
-        val purchases = result?.purchasesList
-        val skus: MutableList<String> = ArrayList()
-        if (purchases != null) {
-            var i = 0
-            for (purchase in purchases) {
-                skus.add(purchase.skus[i])
-                Log.v("CHECKBILLING", purchase.skus[i])
-                i++
-            }
-            if (skus.contains(Config.all_month_id) ||
-                skus.contains(Config.all_threemonths_id) ||
-                skus.contains(Config.all_sixmonths_id) ||
-                skus.contains(Config.all_yearly_id)
-            ) {
-                Config.all_subscription = true
-            }
-        }
-    }
-
-    private fun querySkuDetailsAsync(@SkuType skuType: String, skuList: List<String>) {
-        val params = SkuDetailsParams
-            .newBuilder()
-            .setSkusList(skuList)
-            .setType(skuType)
-            .build()
-        billingClient?.querySkuDetailsAsync(
-            params
-        ) { billingResult: BillingResult, skuDetailsList: List<SkuDetails>? ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && skuDetailsList != null) {
-                for (details in skuDetailsList) {
-                    skusWithSkuDetails[details.sku] = details
-                }
-            }
-        }
-    }
 
     override fun onStart() {
         super.onStart()
 
-        // Register the broadcast receiver and initialize the billing client
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
-        billingClient = BillingClient
-            .newBuilder(this)
-            .setListener(this)
-            .enablePendingPurchases()
-            .build()
+        // Check if the user made a selection
+        if (viewModel.selectedItem.value == null) {
+            // Automatically select the first premium server
+            if (premiumServers.isNotEmpty()) {
+                val firstPremiumCountry = premiumServers[0] // Automatically select the first premium server
+                viewModel.selectedItem.value = firstPremiumCountry
+            }
+        }
+        viewModel.selectedItem.observe(this) { selectedItem ->
+            // Initialize selectedCountry with the value from viewModel
+            selectedCountry = selectedItem
+            // Update UI as needed
+            updateUI("LOAD")
+        }
 
-        connectToBillingService()
-
-        // Retrieve the selected country data if it exists
-        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val savedCountryName = sharedPreferences.getString("selectedCountryName", null)
-        val savedFlagUrl = sharedPreferences.getString("selectedCountryFlagUrl", null)
-        val savedovpn = sharedPreferences.getString("selectedOvpn", null)
-        val savedousername = sharedPreferences.getString("selectedusername", null)
-        val savedpassword = sharedPreferences.getString("selectedpassword", null)
-        Log.d("SavedFlagUrl", "Saved flagUrl: $savedFlagUrl")
+        // Rest of your onStart logic
         val intent = intent
         if (intent.extras != null) {
-            selectedCountry = intent.extras?.getParcelable("c")
-            updateUI("LOAD")
-            if (!Utility.isOnline(applicationContext)) {
-                showMessage("No Internet Connection", "error")
-            } else {
-                showMessage("working", "success")
+            val selectedCountryFromIntent = intent.extras?.getParcelable<Countries>("c")
+            if (selectedCountryFromIntent != null) {
+                selectedCountry = selectedCountryFromIntent
+                updateUI("LOAD")
+                if (!Utility.isOnline(applicationContext)) {
+                    showMessage("No Internet Connection", "error")
+                } else {
+                    showMessage("working", "success")
+                }
             }
-        } else if (savedCountryName != null && savedFlagUrl != null && savedovpn !=null && savedousername !=null &&  savedpassword !=null ) {
-
-            selectedCountry = Countries(savedCountryName, savedFlagUrl, savedovpn, savedousername, savedpassword)
+        } else if (selectedCountry != null) {
             updateUI("CONNECTED")
+            imgFlag?.let {
+                Glide.with(this)
+                    .load(selectedCountry?.flagUrl)
+                    .into(it)
+            }
+            flagName?.text = selectedCountry?.country
         }
     }
+
 
     val isVpnActiveFlow = callbackFlow {
         val connectivityManager =
@@ -237,16 +185,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         Utils.countryName = countryName
         Utils.flagUrl = flagUrl
     }
-
-    fun disconnectFromVpn() {
-        try {
-            OpenVPNThread.stop()
-            updateUI("DISCONNECTED")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -317,27 +255,11 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
         super.onPause()
         unregisterReceiver(broadcastReceiver)
     }
-    private fun hasNotificationPermission(): Boolean {
-        return EasyPermissions.hasPermissions(this, Manifest.permission.POST_NOTIFICATIONS)
-    }
-
-    private fun notificationPermissionChecker() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission()) {
-            EasyPermissions.requestPermissions(
-                this,
-                getString(R.string.notificationPermission),
-                0,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-        }
-    }
 
     private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    notificationPermissionChecker()
-                }
+
                 val vpnState = intent.getStringExtra("state")
                 if (vpnState != null) {
                     if (vpnState == "CONNECTED") {
@@ -417,7 +339,6 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
 
     }
 
-    private val mUIHandler = Handler(Looper.getMainLooper())
 
     fun btnConnectDisconnect() {
         if (Utils.STATUS != "DISCONNECTED") {

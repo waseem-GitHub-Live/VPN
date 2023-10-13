@@ -148,9 +148,10 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
 
 
     override fun onItemClick(country: Countries, position: Int) {
-        viewModel.selectedItem.value = country
-        Log.d("FlagUrlDebug", "FlagUrl to be saved: ${country.getFlagUrl1()}")
-        saveSelectedCountry(country)
+
+        // Rest of your onItemClick logic
+//        Log.d("FlagUrlDebug", "FlagUrl to be saved: ${country.getFlagUrl1()}")
+//        saveSelectedCountry(country)
         disconnectFromVpn()
         val intent = Intent(context, MainActivity::class.java)
         intent.putExtra("c", country)
@@ -162,8 +163,10 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         context?.startActivity(intent)
         adapterPREMIUM.setSelectedPosition(position)
         adapterPREMIUM.notifyDataSetChanged()
-
     }
+
+
+
     fun disconnectFromVpn() {
         try {
             OpenVPNThread.stop()
