@@ -9,7 +9,7 @@ import com.xilli.stealthnet.model.Countries
 class SharedViewmodel : ViewModel() {
 
     var remainingTimeMillis = 30 * 60 * 1000L
-
+    var timeRemainingMillis: Long = 30L * 60 * 1000
     private var startTimeMillis = 0L
     private var isTimerRunning = false
     fun getRemainingTime(): Long {
@@ -25,5 +25,10 @@ class SharedViewmodel : ViewModel() {
     var isSwitchCheckedsavedata = MutableLiveData<Boolean>()
 
     val selectedItem: MutableLiveData<Countries> = MutableLiveData()
+
+    val lastPacketReceivedLiveData = MutableLiveData<String>()
+    val durationLiveData = MutableLiveData<String>()
+    val byteInLiveData = MutableLiveData<String>()
+    val byteOutLiveData = MutableLiveData<String>()
 
 }

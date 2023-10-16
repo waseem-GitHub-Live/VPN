@@ -1,7 +1,6 @@
 package com.xilli.stealthnet.Fragments
 
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -12,9 +11,9 @@ import androidx.activity.addCallback
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.xilli.stealthnet.Activities.MainActivity.Companion.selectedCountry
-import com.xilli.stealthnet.Activities.SharedPreferencesHelper
 import com.xilli.stealthnet.databinding.FragmentReportScreenBinding
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
+import com.xilli.stealthnet.helper.Utils.sharedPreferences
 
 
 class ReportScreenFragment : Fragment() {
@@ -22,19 +21,15 @@ class ReportScreenFragment : Fragment() {
 
     //    val countryName = Utility.countryName
     private var viewModel: SharedViewmodel?=null
-    private lateinit var sharedPreferencesHelper: SharedPreferencesHelper
     private lateinit var sharedrefrence: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         binding = FragmentReportScreenBinding.inflate(inflater, container, false)
-        sharedPreferencesHelper = SharedPreferencesHelper(requireContext())
         viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
         sharedrefrence = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-//        RateScreenFragment.dataUsage = 0
         return binding?.root
     }
 
@@ -50,52 +45,29 @@ class ReportScreenFragment : Fragment() {
         if (savedVPNIP.isNotEmpty()) {
             binding?.connectionReportIp?.text = savedVPNIP
         }
-
-//        val elapsedTime = arguments?.getString("elapsedTime")
-//        binding?.durationTime?.text = elapsedTime
-//        binding?.datausageTime?.text = viewModel?.totalDataUsage1
-//        binding?.durationTime?.text = vpnName
-
-
-        val dataUsageInFragment = sharedrefrence.getLong("dataUsageInFragment", 0L)
-        val downloadSpeed = sharedrefrence.getFloat("downloadSpeed", 0.0f) // Default to 0.0f if not found
-        val uploadSpeed = sharedrefrence.getFloat("uploadSpeed", 0.0f) // Default to 0.0f if not found
-
-// Format data usage
-        val formattedDataUsage = formatDataUsage(dataUsageInFragment.toFloat())
-
-// Format download and upload speeds
-        val formattedDownloadSpeed = formatDataUsage(downloadSpeed)
-        val formattedUploadSpeed = formatDataUsage(uploadSpeed)
-
-// Update the TextViews with the formatted values
-        binding?.datausageTime?.text = formattedDataUsage
-        binding?.downloadTime?.text = formattedDownloadSpeed
-        binding?.UploadTime?.text = formattedUploadSpeed
-
+        val duration = sharedPreferences.getString("duration", "00:00:00")
+        binding?.durationTime?.text = duration
+        val sumBytes = sharedPreferences.getLong("sum", 0L)
+        val byteIn = sharedPreferences.getString("byteIn", " ")
+        val byteOut = sharedPreferences.getString("byteOut", " ")
+        val sumBytesHumanReadable = formatDataUsage(sumBytes)
+        binding?.datausageTime?.text = sumBytesHumanReadable
+        binding?.downloadTime?.text = byteIn
+        binding?.UploadTime?.text = byteOut
     }
-    fun formatDataRate(average: Float): String {
-        val kilobyte = 1024
-        val megabyte = kilobyte * 1024
+    fun formatDataUsage(bytes: Long): String {
+        val kb = bytes / 1024
+        val mb = kb / 1024
+        val gb = mb / 1024
 
         return when {
-            average >= megabyte -> String.format("%.2f MB/s", average / megabyte)
-            average >= kilobyte -> String.format("%.2f KB/s", average / kilobyte)
-            else -> String.format("%.2f B/s", average)
+            gb > 1 -> String.format("%.2f GB", gb.toDouble())
+            mb > 1 -> String.format("%.2f MB", mb.toDouble())
+            kb > 1 -> String.format("%.2f KB", kb.toDouble())
+            else -> String.format("%d Bytes", bytes)
         }
     }
-    private fun formatDataUsage(bytes: Float): String {
-        val kilobyte = 1024
-        val megabyte = kilobyte * 1024
-        val gigabyte = megabyte * 1024
 
-        return when {
-            bytes >= gigabyte -> String.format("%.2f GB", bytes / gigabyte)
-            bytes >= megabyte -> String.format("%.2f MB", bytes / megabyte)
-            bytes >= kilobyte -> String.format("%.2f KB", bytes / kilobyte)
-            else -> "$bytes bytes"
-        }
-    }
     private fun getSavedVPNIP(): String {
         val sharedPreferences: SharedPreferences =
             requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
@@ -104,8 +76,6 @@ class ReportScreenFragment : Fragment() {
 
 
     private fun clicklistener() {
-        val sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
         binding?.imageView5?.setOnClickListener {
             findNavController().navigate(ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment())
         }
@@ -127,10 +97,6 @@ class ReportScreenFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        val sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        // Remove the data from SharedPreferences in onDestroy
-//        val editor = sharedPreferences.edit()
-//        editor.remove("dataUsageInFragment")
-//        editor.apply()
+
     }
 }

@@ -12,32 +12,43 @@ import android.net.TrafficStats
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.bumptech.glide.Glide
-import com.xilli.stealthnet.Activities.CountDownService
 import com.xilli.stealthnet.Activities.MainActivity.Companion.selectedCountry
-import com.xilli.stealthnet.Activities.SharedPreferencesHelper
+import com.xilli.stealthnet.Activities.Work
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.databinding.FragmentRateScreenBinding
 import com.xilli.stealthnet.helper.Utils.showIP
 import com.xilli.stealthnet.helper.Utils.updateUI
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
-import com.xilli.stealthnet.helper.Utils.handler
+import com.xilli.stealthnet.Utils.ActiveServer
+import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.sharedPreferences
 import top.oneconnectapi.app.core.OpenVPNThread
+import java.util.Objects
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class RateScreenFragment : Fragment() {
@@ -48,51 +59,38 @@ class RateScreenFragment : Fragment() {
     private val mHandler = Handler()
     private var mStartRX: Long = 0
     private var mStartTX: Long = 0
+    private var isFirst = true
     private var backPressedOnce = false
     private lateinit var onBackPressedCallback: OnBackPressedCallback
     private var countdownValue = 4
     private var countDownTimer: CountDownTimer? = null
     private var countryName: String? = null
     private var flagUrl: String? = null
-    private var isTimerRunning = false
     private val viewModel by viewModels<SharedViewmodel>()
     private var dataUsageBeforeFragment: Long = 0
     private var dataUsageInFragment: Long = 0
-    private var dataUsageInFragmentnew: Long = 0
-    private var lastMeasurementTime: Long = System.currentTimeMillis()
     private var savedTime: Long = 0L
+    private val handler = Handler()
+    private var updateTimeRunnable: Runnable? = null
+    private val workManager by lazy {
+        WorkManager.getInstance(requireContext())
+    }
+    private var workId: UUID? = null
+    private var timerResetNeeded = false
     companion object {
         var type = ""
         const val KEY_REMAINING_TIME = "remaining_time"
     }
-    private lateinit var sharedPreferencesHelper: SharedPreferencesHelper
-    private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val timeLeft = intent?.getLongExtra("time_left", 0)
-            updateCountdownTextView(timeLeft)
-        }
-    }
-    var mactivity : FragmentActivity?=null
+
+    var mactivity: FragmentActivity? = null
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        mactivity=requireActivity()
+        mactivity = requireActivity()
     }
 
     override fun onDetach() {
         super.onDetach()
-        mactivity=null
-    }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        sharedPreferencesHelper = SharedPreferencesHelper(requireContext())
-        val filter = IntentFilter("COUNTDOWN_TICK")
-        requireContext().registerReceiver(receiver, filter)
-        if (isTimerRunning) {
-            val serviceIntent = Intent(requireContext(), CountDownService::class.java)
-            requireContext().stopService(serviceIntent)
-        }
-        isTimerRunning = true
-
+        mactivity = null
     }
 
     override fun onCreateView(
@@ -105,51 +103,23 @@ class RateScreenFragment : Fragment() {
         val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val selectedCountryName = sharedPrefs.getString("selectedCountryName", null)
         val selectedCountryFlagUrl = sharedPrefs.getString("selectedCountryFlagUrl", null)
-
         if (selectedCountryName != null && selectedCountryFlagUrl != null) {
             val selectedItem = Countries(selectedCountryName, selectedCountryFlagUrl, "", "", "")
             viewModel.selectedItem.value = selectedItem
         }
-//        dataUsageBeforeFragment = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
-        val serviceIntent = Intent(requireContext(), CountDownService::class.java)
-        requireContext().startService(serviceIntent)
-//        datausage()
-
-
+        LocalBroadcastManager.getInstance(requireContext())
+            .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
         return binding?.root
     }
+
     override fun onPause() {
         super.onPause()
-        // Save the current time when leaving the fragment
         savedTime = System.currentTimeMillis()
+        val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        sharedPrefs.edit {
+            putString("workId", workId.toString())
+        }
     }
-    override fun onResume() {
-        super.onResume()
-        // Get the current time when returning to the fragment
-        val currentTime = System.currentTimeMillis()
-
-        // Calculate the time elapsed
-        val timeElapsed = currentTime - savedTime
-
-        // You can now use the 'timeElapsed' value as needed, e.g., display it in a TextView
-        val timeElapsedInSeconds = timeElapsed / 1000
-
-        // Save the time elapsed in SharedPreferences
-        sharedPreferences.edit().putLong("timeElapsedInSeconds", timeElapsedInSeconds).apply()
-    }
-//    private fun datausage() {
-//        val currentTime = System.currentTimeMillis()
-//
-//        // Calculate the time elapsed
-//        val timeElapsed = currentTime - savedTime
-//
-//        // You can now use the 'timeElapsed' value as needed, e.g., display it in a TextView
-//        val timeElapsedInSeconds = timeElapsed / 1000
-//
-//        // Save the time elapsed in SharedPreferences
-//        sharedPreferences.edit().putLong("timeElapsedInSeconds", timeElapsedInSeconds).apply()
-//
-//    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -165,66 +135,118 @@ class RateScreenFragment : Fragment() {
                     saveVPNIP(vpnIp.text.toString())
                 }, 5000)
             }
-
+            again()
+            broadcast()
         }
     }
 
-    override fun onStart() {
-        super.onStart()
+    private fun broadcast() {
+        val broadcastReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                when (intent?.action) {
+                    "countdown_progress" -> {
+                        val timeRemainingMillis = intent.getLongExtra("time_remaining", 1800000 )
+                        // Update UI with the remaining time
+                        val minutes = timeRemainingMillis / 60000
+                        val seconds = (timeRemainingMillis % 60000) / 1000
+                        val timeString = String.format("%02d:%02d", minutes, seconds)
+                        binding?.timeline?.text = timeString
+                    }
 
+                    "countdown_finished" -> {
 
+                    }
+                }
+            }
+        }
+
+        LocalBroadcastManager.getInstance(requireContext())
+            .registerReceiver(broadcastReceiver, IntentFilter().apply {
+                addAction("countdown_progress")
+                addAction("countdown_finished")
+            })
     }
-    private fun data() {
-        val savedDataUsage = sharedPreferences.getLong("timeElapsedInSeconds", 0L)
-        if (savedDataUsage > 0) {
-            mStartRX = TrafficStats.getTotalRxBytes()
-            mStartTX = TrafficStats.getTotalTxBytes()
+    private fun startTimer() {
+        // Cancel the current WorkManager task
+        workId?.let {
+            workManager.cancelWorkById(it)
+        }
+        // Create a new unique name or tag for the work request
+        val uniqueWorkName = "timerWorkRequest-${System.currentTimeMillis()}"
+        // Start a new WorkManager task for the timer with a 30-minute initial time
+        val initialTime = 1800000 // 30 minutes
+        val inputData = workDataOf("initial_time" to initialTime)
+        val workRequest = OneTimeWorkRequestBuilder<Work>()
+            .setInputData(inputData)
+            .addTag(uniqueWorkName)
+            .build()
+        workManager.enqueue(workRequest)
+        workId = workRequest.id
+    }
+    private fun again() {
+        startTimer()
+        workId?.let { workId ->
+            workManager.getWorkInfoByIdLiveData(workId).observe(viewLifecycleOwner) { workInfo ->
+                if (workInfo != null) {
+                    when (workInfo.state) {
+                        WorkInfo.State.ENQUEUED -> {
+                            // Work is scheduled
+                        }
 
-            dataUsageInFragmentnew =
-                (TrafficStats.getTotalRxBytes() - mStartRX) + (TrafficStats.getTotalTxBytes() - mStartTX)
+                        WorkInfo.State.SUCCEEDED -> {
+                            val countdownFinished = workInfo.outputData.getBoolean("countdown_finished", false)
+                            if (countdownFinished) {
+                                binding?.timeline?.text = "00:00"
+                            } else {
+                                val timeRemaining = workInfo.progress.getLong(
+                                    "time_remaining",
+                                    1800000
+                                )
+                                val minutes = timeRemaining / 60000
+                                val seconds = (timeRemaining % 60000) / 1000
+                                val timeString = String.format("%02d:%02d", minutes, seconds)
+                                binding?.timeline?.text = timeString
+                            }
+                        }
 
-            val downloadSpeed =
-                ((TrafficStats.getTotalRxBytes() - mStartRX) /savedDataUsage.toFloat())
-            val uploadSpeed =
-                ((TrafficStats.getTotalTxBytes() - mStartTX)/savedDataUsage.toFloat())
-
-            val editor = sharedPreferences.edit()
-            editor.putLong("dataUsageInFragment", dataUsageInFragmentnew)
-            editor.putFloat("downloadSpeed", downloadSpeed)
-            editor.putFloat("uploadSpeed", uploadSpeed)
-            editor.apply()
-        } else {
-            val editor = sharedPreferences.edit()
-            editor.putLong("dataUsageInFragment", 0L)
-            editor.putFloat("downloadSpeed", 0.0f)
-            editor.putFloat("uploadSpeed", 0.0f)
-            editor.apply()
+                        else -> {}
+                    }
+                }
+            }
         }
     }
+
+
+
+    override fun onResume() {
+        super.onResume()
+
+        if (timerResetNeeded) {
+            // Reset the countdown timer to 30 minutes
+            val initialTime = 1800000 // 30 minutes
+            val inputData = workDataOf("initial_time" to initialTime)
+            val workRequest = OneTimeWorkRequestBuilder<Work>()
+                .setInputData(inputData)
+                .build()
+            workManager.enqueue(workRequest)
+            workId = workRequest.id
+        }
+
+        // Start or continue the countdown
+        again()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        val serviceIntent = Intent(requireContext(), CountDownService::class.java)
-        requireContext().stopService(serviceIntent)
-
-        requireContext().unregisterReceiver(receiver)
-        dataUsageInFragment = (TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()) - dataUsageBeforeFragment
+        dataUsageInFragment =
+            (TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()) - dataUsageBeforeFragment
         val editor = sharedPreferences.edit()
         editor.putLong("dataUsageInFragment", dataUsageInFragment)
         editor.apply()
-
+        updateTimeRunnable?.let { handler.removeCallbacks(it) }
     }
 
 
-
-    private fun updateCountdownTextView(timeLeft: Long?) {
-        val textViewCountdown = view?.findViewById<TextView>(R.id.timeline)
-        if (textViewCountdown != null && timeLeft != null) {
-            val minutes = (timeLeft / 1000) / 60
-            val seconds = (timeLeft / 1000) % 60
-            val countdownText = String.format("%02d:%02d", minutes, seconds)
-            textViewCountdown.text = countdownText
-        }
-    }
     private fun datasheet() {
         binding?.flagimageView?.let {
             Glide.with(this)
@@ -234,17 +256,20 @@ class RateScreenFragment : Fragment() {
         binding?.flagName?.text = selectedCountry?.country
     }
 
-    private fun saveVPNIP(vpnIP: String) {if (mactivity!=null) {
-        val sharedPreferences: SharedPreferences =
-            mactivity!!.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.putString("vpnIP", vpnIP)
-        editor.apply()
+    private fun saveVPNIP(vpnIP: String) {
+        if (mactivity != null) {
+            val sharedPreferences: SharedPreferences =
+                mactivity!!.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            editor.putString("vpnIP", vpnIP)
+            editor.apply()
+        }
     }
-    }
+
     private fun startRunnable() {
         mRunnable.run()
     }
+
     private fun updateTrafficStats() {
         val totalDataUsage = calculateTotalDataUsage()
         val resetDownload = TrafficStats.getTotalRxBytes()
@@ -261,8 +286,10 @@ class RateScreenFragment : Fragment() {
         val avgTxSpeed = calculateAverageSpeed(mStartTX, txBytes)
         saveTrafficStats(totalDataUsage, avgRxSpeed, avgTxSpeed)
     }
+
     private fun saveTrafficStats(totalDataUsage: String, avgRxSpeed: String, avgTxSpeed: String) {
-        val sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val sharedPreferences =
+            requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putString("totalDataUsage", totalDataUsage)
         editor.putString("averageRxSpeed", avgRxSpeed)
@@ -283,6 +310,7 @@ class RateScreenFragment : Fragment() {
             else -> String.format("%.2f GB", bytes.toDouble() / giga)
         }
     }
+
     private fun calculateAverageSpeed(startBytes: Long, currentBytes: Long): String {
         val bytesTransferred = abs(currentBytes - startBytes)
 
@@ -293,6 +321,7 @@ class RateScreenFragment : Fragment() {
             else -> "${bytesTransferred / (1024 * 1024 * 1024)} GB/s"
         }
     }
+
     private fun calculateTotalDataUsage(): String {
         val totalRxBytes = TrafficStats.getTotalRxBytes()
         val totalTxBytes = TrafficStats.getTotalTxBytes()
@@ -300,6 +329,7 @@ class RateScreenFragment : Fragment() {
         val totalBytes = totalRxBytes + totalTxBytes
         return formatDataUsage(totalBytes)
     }
+
     private fun formatDataUsage(bytes: Long): String {
         val kilobytes = bytes / 1024
         val megabytes = kilobytes / 1024
@@ -328,8 +358,12 @@ class RateScreenFragment : Fragment() {
                 }
             }
         }
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, onBackPressedCallback)
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            onBackPressedCallback
+        )
     }
+
     private fun alertdialog(dialogInterface: DialogInterface) {
         val alertSheetDialog = dialogInterface as AlertDialog
         val alertdialog = alertSheetDialog.findViewById<View>(
@@ -341,7 +375,8 @@ class RateScreenFragment : Fragment() {
 
     private fun clicklistner() {
         binding?.menu?.setOnClickListener {
-            val drawerLayout = requireActivity().findViewById<DrawerLayout>(R.id.constraintlayoutmenu)
+            val drawerLayout =
+                requireActivity().findViewById<DrawerLayout>(R.id.constraintlayoutmenu)
             drawerLayout.openDrawer(GravityCompat.START)
         }
         binding?.premimunbutton2?.setOnClickListener {
@@ -359,9 +394,11 @@ class RateScreenFragment : Fragment() {
                 R.id.settings_menu -> {
                     findNavController().navigate(RateScreenFragmentDirections.actionRateScreenFragmentToSettingFragment())
                 }
+
                 R.id.server_menu -> {
                     findNavController().navigate(RateScreenFragmentDirections.actionRateScreenFragmentToServerListFragment())
                 }
+
                 R.id.split_menu -> {
                     findNavController().navigate(RateScreenFragmentDirections.actionRateScreenFragmentToSplitTunningFragment2())
                 }
@@ -370,8 +407,98 @@ class RateScreenFragment : Fragment() {
         }
     }
 
+    private fun saveDisconnectData(
+        duration: String,
+        lastPacketReceive: String,
+        byteIn: String,
+        byteOut: String,
+        sumBytes: Long
+    ) {
+        val sharedPreferences =
+            requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+
+        val editor = sharedPreferences.edit()
+        editor.putString("duration", duration)
+        editor.putString("lastPacketReceive", lastPacketReceive)
+        editor.putString("byteIn", byteIn)
+        editor.putString("byteOut", byteOut)
+        editor.putLong("sum", sumBytes) // Store sumBytes as a Long
+        editor.apply()
+    }
+
+    private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+
+            try {
+                val vpnState = intent.getStringExtra("state")
+                if (vpnState != null) {
+                    if (vpnState == "CONNECTED") {
+                        // VPN is connected
+                        Utils.updateUI("connected") // You can update UI accordingly
+                        Utils.isConnected = true
+
+                        findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToRateScreenFragment())
+
+                    } else if (vpnState == "DISCONNECTED") {
+                        // VPN is disconnected
+                        Utils.updateUI("disconnected") // You can update UI accordingly
+                        Utils.isConnected = false
+                    }
+                    Log.v("yoo", vpnState)
+                }
+
+                Objects.requireNonNull(Utils.getIntent().getStringExtra("state")).let {
+                    if (it != null) {
+                        Utils.updateUI(it)
+
+                    }
+                }
+                Objects.requireNonNull(intent.getStringExtra("state"))
+                    .let {
+                        if (it != null) {
+                            Log.v("CHECKSTATE", it)
+
+                        }
+                    }
+                if (isFirst) {
+                    if (ActiveServer.getSavedServer(requireContext()).country != null) {
+                        selectedCountry = ActiveServer.getSavedServer(requireContext())
+                        Utils.imgFlag?.let {
+                            Glide.with(requireContext())
+                                .load(selectedCountry?.flagUrl)
+                                .into(it)
+                        }
+                        Utils.flagName?.text = selectedCountry?.country
+                    }
+                    isFirst = false
+                }
+                Utils.isConnected = true
+
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                var duration = intent.getStringExtra("duration")
+                var lastPacketReceive = intent.getStringExtra("lastPacketReceive")
+                var byteIn = intent.getStringExtra("byteIn")
+                var byteOut = intent.getStringExtra("byteOut")
+                if (duration == null) duration = "00:00:00"
+                if (lastPacketReceive == null) lastPacketReceive = "0"
+                if (byteIn == null) byteIn = " "
+                if (byteOut == null) byteOut = " "
+                updateConnectionStatus(duration, lastPacketReceive, byteIn, byteOut)
+                viewModel.lastPacketReceivedLiveData.value = lastPacketReceive
+                viewModel.durationLiveData.value = duration
+                viewModel.byteInLiveData.value = byteIn
+                viewModel.byteOutLiveData.value = byteOut
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     private fun disconnectmethod() {
-        data()
 
         val dialogView =
             LayoutInflater.from(requireContext()).inflate(R.layout.dialog_cancel_vpn, null)
@@ -399,28 +526,40 @@ class RateScreenFragment : Fragment() {
                 remainingTime--
                 disconnectTextView.text = "Disconnect ($remainingTime s)"
                 // Change the background color and text color here
-                val disconnectViewColor = ContextCompat.getColor(requireContext(), R.color.disconnectview)
+                val disconnectViewColor =
+                    ContextCompat.getColor(requireContext(), R.color.disconnectview)
                 disconnectTextView.setBackgroundResource(R.drawable.disconnect_timer_drawable)
                 disconnectTextView.setTextColor(disconnectViewColor)// Example: Change text color to white
             }
 
             override fun onFinish() {
-
                 disconnectTextView.setOnClickListener {
-
+                    workId?.let {
+                        workManager.cancelWorkById(it)
+                    }
+                    workManager.cancelAllWork()
+                    workId=null
+                    val duration = viewModel.durationLiveData.value ?: "00:00:00"
+                    val lastPacketReceive = viewModel.lastPacketReceivedLiveData.value ?: "0"
+                    val byteIn = viewModel.byteInLiveData.value ?: " "
+                    val byteOut = viewModel.byteOutLiveData.value ?: " "
+                    val byteInValue = convertToBytes(byteIn)
+                    val byteOutValue = convertToBytes(byteOut)
+                    val sumBytes = byteInValue + byteOutValue
+                    saveDisconnectData(duration, lastPacketReceive, byteIn, byteOut, sumBytes)
                     findNavController().navigate(RateScreenFragmentDirections.actionRateScreenFragmentToReportScreenFragment())
                     disconnectFromVpn()
-
                     dialog.dismiss()
                 }
+
                 disconnectTextView.background = originalDisconnectBackground
                 disconnectTextView.setTextColor(originalDisconnectTextColor)
                 disconnectTextView.text = getString(R.string.disconnect_timer_initial)
             }
         }
-
         countDownTimer?.start()
     }
+
     fun disconnectFromVpn() {
         try {
             OpenVPNThread.stop()
@@ -429,18 +568,22 @@ class RateScreenFragment : Fragment() {
             e.printStackTrace()
         }
     }
+
     private val mRunnable: Runnable = object : Runnable {
         override fun run() {
             updateTrafficStats()
             mHandler.postDelayed(this, 1000)
         }
     }
+
     override fun onDestroyView() {
         mHandler.removeCallbacks(mRunnable)
         onBackPressedCallback.isEnabled = false
         onBackPressedCallback.remove()
         super.onDestroyView()
+
     }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         // Save the data you want to restore later
@@ -453,5 +596,37 @@ class RateScreenFragment : Fragment() {
         outState.putLong(KEY_REMAINING_TIME, viewModel.getRemainingTime())
     }
 
+    fun updateConnectionStatus(
+        duration: String?,
+        lastPacketReceive: String?,
+        byteIn: String,
+        byteOut: String
+    ) {
+        val byteinKb = byteIn.split("-").toTypedArray()[1]
+        val byteoutKb = byteOut.split("-").toTypedArray()[1]
+
+        Utils.textDownloading?.text = byteinKb
+        Utils.textUploading?.text = byteoutKb
+        Utils.timerTextView?.text = duration
+    }
+
+    fun convertToBytes(byteString: String): Long {
+        val regex = Regex("([0-9.]+)\\s*([A-Za-z]+)")
+        val match = regex.find(byteString)
+
+        if (match != null) {
+            val value = match.groupValues[1].toDouble()
+            val unit = match.groupValues[2].toLowerCase()
+
+            return when (unit) {
+                "b" -> value.toLong()
+                "kb" -> (value * 1024).toLong()
+                "mb" -> (value * 1024 * 1024).toLong()
+                "gb" -> (value * 1024 * 1024 * 1024).toLong()
+                else -> 0L // Unsupported unit, handle accordingly
+            }
+        }
+        return 0L // Parsing failed, handle accordingly
+    }
 }
 
