@@ -95,10 +95,10 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     private fun setupPremiumRecyclerView() {
         recyclerView = binding?.recyclerView ?: return
         val premiumServers = loadServersvip()
-        val freeserver = loadServers()
+
         val list = mutableListOf<Countries>()
         list.addAll(premiumServers)
-        list.addAll(freeserver)
+        list.addAll(HomeFragment.freeServerList)
         adapterPREMIUM = SearchView_Premium_Adapter(requireContext(),list )
         adapterPREMIUM.setOnItemClickListener(this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

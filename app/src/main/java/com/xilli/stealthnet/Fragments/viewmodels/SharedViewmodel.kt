@@ -56,4 +56,9 @@ class SharedViewmodel : ViewModel() {
 
     val selectedItem: MutableLiveData<Countries> = MutableLiveData()
 
+    val lastPacketReceivedLiveData = MutableLiveData<String>()
+    val durationLiveData = MutableLiveData<String>()
+    val byteInLiveData = MutableLiveData<String>()
+    val byteOutLiveData = MutableLiveData<String>()
+
 }

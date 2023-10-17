@@ -1,11 +1,13 @@
 package com.xilli.stealthnet.Fragments
 
+import android.Manifest
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -18,6 +20,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.findNavController
@@ -26,6 +29,7 @@ import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity
 import com.xilli.stealthnet.Activities.MainActivity.Companion.selectedCountry
 import com.xilli.stealthnet.Activities.Utility
+import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.databinding.FragmentHomeBinding
@@ -33,17 +37,20 @@ import com.xilli.stealthnet.helper.Utils
 import com.xilli.stealthnet.helper.Utils.getIntent
 import com.xilli.stealthnet.helper.Utils.isConnected
 import com.xilli.stealthnet.helper.Utils.showMessage
+import com.xilli.stealthnet.model.Countries
 import es.dmoral.toasty.Toasty
+import pub.devrel.easypermissions.EasyPermissions
 import java.util.Objects
 
-class HomeFragment : Fragment() {
+class HomeFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     private var binding: FragmentHomeBinding? = null
     private var isFirst = true
     private var connectionStateTextView: TextView? = null
     private var timerTextView: TextView? = null
-
+    private val viewModel by viewModels<SharedViewmodel>()
     companion object {
         var type = ""
+        var freeServerList = emptyList<Countries>()
     }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -61,10 +68,18 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        if (selectedCountry == null){
+            freeServerList = Utils.loadServers()
+            selectedCountry = freeServerList[0]
+        }
+
         clicklistner()
         backpressed()
         setConnectBtnClickListener()
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionChecker()
+        }
         val countryName = arguments?.getString("countryName")
         val flagUrl = arguments?.getString("flagUrl")
     }
@@ -112,6 +127,7 @@ class HomeFragment : Fragment() {
 
     private var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+
             try {
                 val vpnState = intent.getStringExtra("state")
                 if (vpnState != null) {
@@ -120,13 +136,9 @@ class HomeFragment : Fragment() {
                         Utils.updateUI("connected") // You can update UI accordingly
                         isConnected = true
                         binding?.connect?.text = "Connected"
-                        val navController = Navigation.findNavController(
-                            requireActivity(),
-                            R.id.nav_host_fragment
-                        )
-                        val action =
-                            HomeFragmentDirections.actionHomeFragmentToRateScreenFragment()
-                        navController.navigate(action)
+
+                        findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToRateScreenFragment())
+
                     } else if (vpnState == "DISCONNECTED") {
                         // VPN is disconnected
                         Utils.updateUI("disconnected") // You can update UI accordingly
@@ -179,10 +191,10 @@ class HomeFragment : Fragment() {
                 if (byteIn == null) byteIn = " "
                 if (byteOut == null) byteOut = " "
                 updateConnectionStatus(duration, lastPacketReceive, byteIn, byteOut)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-
         }
     }
 
@@ -324,5 +336,29 @@ class HomeFragment : Fragment() {
             }
             true
         }
+    }
+    private fun hasNotificationPermission(): Boolean {
+        val context = requireContext() // Check if it's not null
+        return EasyPermissions.hasPermissions(context, Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+
+    private fun notificationPermissionChecker() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission()) {
+            EasyPermissions.requestPermissions(
+                requireActivity(),
+                getString(R.string.notificationPermission),
+                0,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+        }
+    }
+
+    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
+        TODO("Not yet implemented")
     }
 }

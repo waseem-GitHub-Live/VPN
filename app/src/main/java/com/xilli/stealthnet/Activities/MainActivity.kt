@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
             Config.all_yearly_id
         )
     )
+    val premiumServers: List<Countries> by lazy { Utils.loadServersvip() }
     var hasNavigated = false
     private val viewModel by viewModels<SharedViewmodel>()
     private var STATUS: String? = "DISCONNECTED"
@@ -146,40 +147,32 @@ class MainActivity : AppCompatActivity(), PurchasesUpdatedListener, BillingClien
     override fun onStart() {
         super.onStart()
 
-        // Register the broadcast receiver and initialize the billing client
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
-        billingClient = BillingClient
-            .newBuilder(this)
-            .setListener(this)
-            .enablePendingPurchases()
-            .build()
 
-        connectToBillingService()
 
-        // Retrieve the selected country data if it exists
-        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val savedCountryName = sharedPreferences.getString("selectedCountryName", null)
-        val savedFlagUrl = sharedPreferences.getString("selectedCountryFlagUrl", null)
-        val savedovpn = sharedPreferences.getString("selectedOvpn", null)
-        val savedousername = sharedPreferences.getString("selectedusername", null)
-        val savedpassword = sharedPreferences.getString("selectedpassword", null)
-        Log.d("SavedFlagUrl", "Saved flagUrl: $savedFlagUrl")
+        // Rest of your onStart logic
         val intent = intent
         if (intent.extras != null) {
-            selectedCountry = intent.extras?.getParcelable("c")
-            updateUI("LOAD")
-            if (!Utility.isOnline(applicationContext)) {
-                showMessage("No Internet Connection", "error")
-            } else {
-                showMessage("working", "success")
+            val selectedCountryFromIntent = intent.extras?.getParcelable<Countries>("c")
+            if (selectedCountryFromIntent != null) {
+                selectedCountry = selectedCountryFromIntent
+                updateUI("LOAD")
+                if (!Utility.isOnline(applicationContext)) {
+                    showMessage("No Internet Connection", "error")
+                } else {
+                    showMessage("working", "success")
+                }
             }
-        } else if (savedCountryName != null && savedFlagUrl != null && savedovpn !=null && savedousername !=null &&  savedpassword !=null ) {
-
-            selectedCountry = Countries(savedCountryName, savedFlagUrl, savedovpn, savedousername, savedpassword)
+        } else if (selectedCountry != null) {
             updateUI("CONNECTED")
+            imgFlag?.let {
+                Glide.with(this)
+                    .load(selectedCountry?.flagUrl)
+                    .into(it)
+            }
+            flagName?.text = selectedCountry?.country
         }
     }
+
 
     val isVpnActiveFlow = callbackFlow {
         val connectivityManager =
