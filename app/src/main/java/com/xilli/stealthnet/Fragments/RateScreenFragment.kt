@@ -28,6 +28,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
+import androidx.work.Constraints
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
@@ -44,6 +46,7 @@ import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.helper.Utils
+import com.xilli.stealthnet.helper.Utils.findViewById
 import com.xilli.stealthnet.helper.Utils.sharedPreferences
 import top.oneconnectapi.app.core.OpenVPNThread
 import java.util.Objects
@@ -71,7 +74,9 @@ class RateScreenFragment : Fragment() {
     private var dataUsageInFragment: Long = 0
     private var savedTime: Long = 0L
     private val handler = Handler()
+    private var timeRemainingMillis: Long = 1800000
     private var updateTimeRunnable: Runnable? = null
+    private var countdownTimer: CountDownTimer? = null
     private val workManager by lazy {
         WorkManager.getInstance(requireContext())
     }
@@ -81,7 +86,7 @@ class RateScreenFragment : Fragment() {
         var type = ""
         const val KEY_REMAINING_TIME = "remaining_time"
     }
-
+    private lateinit var disconnectButton: TextView
     var mactivity: FragmentActivity? = null
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -109,21 +114,15 @@ class RateScreenFragment : Fragment() {
         }
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
+
         return binding?.root
     }
 
-    override fun onPause() {
-        super.onPause()
-        savedTime = System.currentTimeMillis()
-        val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        sharedPrefs.edit {
-            putString("workId", workId.toString())
-        }
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mactivity.let {
+            starttime()
             clicklistner()
             setupBackPressedCallback()
             startRunnable()
@@ -135,107 +134,31 @@ class RateScreenFragment : Fragment() {
                     saveVPNIP(vpnIp.text.toString())
                 }, 5000)
             }
-            again()
-            broadcast()
+
         }
     }
-
-    private fun broadcast() {
-        val broadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                when (intent?.action) {
-                    "countdown_progress" -> {
-                        val timeRemainingMillis = intent.getLongExtra("time_remaining", 1800000 )
-                        // Update UI with the remaining time
-                        val minutes = timeRemainingMillis / 60000
-                        val seconds = (timeRemainingMillis % 60000) / 1000
-                        val timeString = String.format("%02d:%02d", minutes, seconds)
-                        binding?.timeline?.text = timeString
-                    }
-
-                    "countdown_finished" -> {
-
-                    }
-                }
+    private fun starttime() {
+        countdownTimer = object : CountDownTimer(timeRemainingMillis, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                timeRemainingMillis = millisUntilFinished
+                updateTimerText()
             }
-        }
 
-        LocalBroadcastManager.getInstance(requireContext())
-            .registerReceiver(broadcastReceiver, IntentFilter().apply {
-                addAction("countdown_progress")
-                addAction("countdown_finished")
-            })
-    }
-    private fun startTimer() {
-        // Cancel the current WorkManager task
-        workId?.let {
-            workManager.cancelWorkById(it)
-        }
-        // Create a new unique name or tag for the work request
-        val uniqueWorkName = "timerWorkRequest-${System.currentTimeMillis()}"
-        // Start a new WorkManager task for the timer with a 30-minute initial time
-        val initialTime = 1800000 // 30 minutes
-        val inputData = workDataOf("initial_time" to initialTime)
-        val workRequest = OneTimeWorkRequestBuilder<Work>()
-            .setInputData(inputData)
-            .addTag(uniqueWorkName)
-            .build()
-        workManager.enqueue(workRequest)
-        workId = workRequest.id
-    }
-    private fun again() {
-        startTimer()
-        workId?.let { workId ->
-            workManager.getWorkInfoByIdLiveData(workId).observe(viewLifecycleOwner) { workInfo ->
-                if (workInfo != null) {
-                    when (workInfo.state) {
-                        WorkInfo.State.ENQUEUED -> {
-                            // Work is scheduled
-                        }
-
-                        WorkInfo.State.SUCCEEDED -> {
-                            val countdownFinished = workInfo.outputData.getBoolean("countdown_finished", false)
-                            if (countdownFinished) {
-                                binding?.timeline?.text = "00:00"
-                            } else {
-                                val timeRemaining = workInfo.progress.getLong(
-                                    "time_remaining",
-                                    1800000
-                                )
-                                val minutes = timeRemaining / 60000
-                                val seconds = (timeRemaining % 60000) / 1000
-                                val timeString = String.format("%02d:%02d", minutes, seconds)
-                                binding?.timeline?.text = timeString
-                            }
-                        }
-
-                        else -> {}
-                    }
-                }
+            override fun onFinish() {
             }
-        }
+        }.start()
+    }
+    private fun resetTimer() {
+        timeRemainingMillis = 1800000
+        updateTimerText()
+        countdownTimer?.cancel()
     }
 
-
-
-    override fun onResume() {
-        super.onResume()
-
-        if (timerResetNeeded) {
-            // Reset the countdown timer to 30 minutes
-            val initialTime = 1800000 // 30 minutes
-            val inputData = workDataOf("initial_time" to initialTime)
-            val workRequest = OneTimeWorkRequestBuilder<Work>()
-                .setInputData(inputData)
-                .build()
-            workManager.enqueue(workRequest)
-            workId = workRequest.id
-        }
-
-        // Start or continue the countdown
-        again()
+    private fun updateTimerText() {
+        val minutes = (timeRemainingMillis / 60000).toInt()
+        val seconds = ((timeRemainingMillis % 60000) / 1000).toInt()
+        binding?.timeline?.text = String.format("%02d:%02d", minutes, seconds)
     }
-
     override fun onDestroy() {
         super.onDestroy()
         dataUsageInFragment =
@@ -243,7 +166,7 @@ class RateScreenFragment : Fragment() {
         val editor = sharedPreferences.edit()
         editor.putLong("dataUsageInFragment", dataUsageInFragment)
         editor.apply()
-        updateTimeRunnable?.let { handler.removeCallbacks(it) }
+
     }
 
 
@@ -534,11 +457,12 @@ class RateScreenFragment : Fragment() {
 
             override fun onFinish() {
                 disconnectTextView.setOnClickListener {
-                    workId?.let {
-                        workManager.cancelWorkById(it)
-                    }
-                    workManager.cancelAllWork()
-                    workId=null
+//                    workId?.let {
+//                        workManager.cancelWorkById(it)
+//                    }
+//                    workManager.cancelAllWork()
+//                    workId=null
+                    resetTimer()
                     val duration = viewModel.durationLiveData.value ?: "00:00:00"
                     val lastPacketReceive = viewModel.lastPacketReceivedLiveData.value ?: "0"
                     val byteIn = viewModel.byteInLiveData.value ?: " "
