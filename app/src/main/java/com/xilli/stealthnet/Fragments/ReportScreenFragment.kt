@@ -18,8 +18,6 @@ import com.xilli.stealthnet.helper.Utils.sharedPreferences
 
 class ReportScreenFragment : Fragment() {
     private var binding: FragmentReportScreenBinding? = null
-
-    //    val countryName = Utility.countryName
     private var viewModel: SharedViewmodel?=null
     private lateinit var sharedrefrence: SharedPreferences
 
@@ -27,7 +25,6 @@ class ReportScreenFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         binding = FragmentReportScreenBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
         sharedrefrence = requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
@@ -41,7 +38,6 @@ class ReportScreenFragment : Fragment() {
 
 
     }
-
     private fun datasheet() {
         binding?.textView9?.text = selectedCountry?.country
         val savedVPNIP = getSavedVPNIP()
@@ -76,8 +72,6 @@ class ReportScreenFragment : Fragment() {
             requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         return sharedPreferences.getString("vpnIP", "") ?: ""
     }
-
-
     private fun clicklistener() {
         binding?.imageView5?.setOnClickListener {
             findNavController().navigate(ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment())
@@ -96,10 +90,5 @@ class ReportScreenFragment : Fragment() {
             val action = ReportScreenFragmentDirections.actionReportScreenFragmentToHomeFragment()
             findNavController().navigate(action)
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
     }
 }

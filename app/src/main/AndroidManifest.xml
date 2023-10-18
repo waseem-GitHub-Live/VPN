@@ -71,7 +71,6 @@
             </intent-filter>
         </service>
 
-
         <!-- OneSignal -->
         <service
             android:name=".Activities.CountDownService"

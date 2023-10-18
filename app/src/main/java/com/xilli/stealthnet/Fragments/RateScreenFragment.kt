@@ -19,7 +19,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
@@ -28,12 +27,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
-
-import androidx.work.WorkManager
-
 import com.bumptech.glide.Glide
 import com.xilli.stealthnet.Activities.MainActivity.Companion.selectedCountry
-
 import com.xilli.stealthnet.R
 import com.xilli.stealthnet.databinding.FragmentRateScreenBinding
 import com.xilli.stealthnet.helper.Utils.showIP
@@ -42,12 +37,9 @@ import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import com.xilli.stealthnet.Utils.ActiveServer
 import com.xilli.stealthnet.helper.Utils
-import com.xilli.stealthnet.helper.Utils.findViewById
 import com.xilli.stealthnet.helper.Utils.sharedPreferences
 import top.oneconnectapi.app.core.OpenVPNThread
 import java.util.Objects
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class RateScreenFragment : Fragment() {
@@ -68,21 +60,13 @@ class RateScreenFragment : Fragment() {
     private val viewModel by viewModels<SharedViewmodel>()
     private var dataUsageBeforeFragment: Long = 0
     private var dataUsageInFragment: Long = 0
-    private var savedTime: Long = 0L
     private val handler = Handler()
     private var timeRemainingMillis: Long = 1800000
-    private var updateTimeRunnable: Runnable? = null
     private var countdownTimer: CountDownTimer? = null
-    private val workManager by lazy {
-        WorkManager.getInstance(requireContext())
-    }
-    private var workId: UUID? = null
-    private var timerResetNeeded = false
     companion object {
         var type = ""
         const val KEY_REMAINING_TIME = "remaining_time"
     }
-    private lateinit var disconnectButton: TextView
     var mactivity: FragmentActivity? = null
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -110,7 +94,6 @@ class RateScreenFragment : Fragment() {
         }
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(broadcastReceiver, IntentFilter("connectionState"))
-
         return binding?.root
     }
 
@@ -137,7 +120,7 @@ class RateScreenFragment : Fragment() {
         countdownTimer = object : CountDownTimer(timeRemainingMillis, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 timeRemainingMillis = millisUntilFinished
-                updateTimerText()
+                updateTimerText(timeRemainingMillis)
             }
 
             override fun onFinish() {
@@ -145,16 +128,16 @@ class RateScreenFragment : Fragment() {
         }.start()
     }
     private fun resetTimer() {
-        timeRemainingMillis = 1800000
-        updateTimerText()
+        updateTimerText(timeRemainingMillis)
         countdownTimer?.cancel()
     }
 
-    private fun updateTimerText() {
+    private fun updateTimerText(timeRemainingMillis: Long) {
         val minutes = (timeRemainingMillis / 60000).toInt()
         val seconds = ((timeRemainingMillis % 60000) / 1000).toInt()
         binding?.timeline?.text = String.format("%02d:%02d", minutes, seconds)
     }
+
     override fun onDestroy() {
         super.onDestroy()
         dataUsageInFragment =
@@ -164,8 +147,6 @@ class RateScreenFragment : Fragment() {
         editor.apply()
 
     }
-
-
     private fun datasheet() {
         binding?.flagimageView?.let {
             Glide.with(this)
@@ -174,7 +155,6 @@ class RateScreenFragment : Fragment() {
         }
         binding?.flagName?.text = selectedCountry?.country
     }
-
     private fun saveVPNIP(vpnIP: String) {
         if (mactivity != null) {
             val sharedPreferences: SharedPreferences =
@@ -184,7 +164,6 @@ class RateScreenFragment : Fragment() {
             editor.apply()
         }
     }
-
     private fun startRunnable() {
         mRunnable.run()
     }
@@ -261,7 +240,6 @@ class RateScreenFragment : Fragment() {
             else -> "$bytes Bytes"
         }
     }
-
     private fun setupBackPressedCallback() {
         onBackPressedCallback = object : OnBackPressedCallback(true) {
             private var isDisconnecting = false
@@ -325,7 +303,6 @@ class RateScreenFragment : Fragment() {
             true
         }
     }
-
     private fun saveDisconnectData(
         duration: String,
         lastPacketReceive: String,
@@ -453,11 +430,6 @@ class RateScreenFragment : Fragment() {
 
             override fun onFinish() {
                 disconnectTextView.setOnClickListener {
-//                    workId?.let {
-//                        workManager.cancelWorkById(it)
-//                    }
-//                    workManager.cancelAllWork()
-//                    workId=null
                     resetTimer()
                     val duration = viewModel.durationLiveData.value ?: "00:00:00"
                     val lastPacketReceive = viewModel.lastPacketReceivedLiveData.value ?: "0"
@@ -514,6 +486,7 @@ class RateScreenFragment : Fragment() {
         outState.putString("flagUrl", flagUrl)
         val viewModel = ViewModelProvider(requireActivity())[SharedViewmodel::class.java]
         outState.putLong(KEY_REMAINING_TIME, viewModel.getRemainingTime())
+        outState.putLong(KEY_REMAINING_TIME, timeRemainingMillis)
     }
 
     fun updateConnectionStatus(
@@ -543,10 +516,10 @@ class RateScreenFragment : Fragment() {
                 "kb" -> (value * 1024).toLong()
                 "mb" -> (value * 1024 * 1024).toLong()
                 "gb" -> (value * 1024 * 1024 * 1024).toLong()
-                else -> 0L // Unsupported unit, handle accordingly
+                else -> 0L
             }
         }
-        return 0L // Parsing failed, handle accordingly
+        return 0L
     }
 }
 

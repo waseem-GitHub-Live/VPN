@@ -6,8 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
-import com.xilli.stealthnet.R
-import com.xilli.stealthnet.databinding.FragmentOnboardingScreenBinding
 import com.xilli.stealthnet.databinding.FragmentPremiumBinding
 
 class PremiumFragment : Fragment() {

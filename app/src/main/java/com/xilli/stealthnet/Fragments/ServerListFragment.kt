@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,7 +24,6 @@ import com.xilli.stealthnet.helper.Utils.loadServersvip
 import com.xilli.stealthnet.model.Countries
 import com.xilli.stealthnet.Fragments.viewmodels.SharedViewmodel
 import com.xilli.stealthnet.helper.Utils
-import kotlinx.coroutines.launch
 import top.oneconnectapi.app.core.OpenVPNThread
 
 
@@ -33,39 +31,29 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
     private var binding: FragmentServerListBinding?=null
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapterPREMIUM: SearchView_Premium_Adapter
-//    private lateinit var adapterFREE: SearchView_Free_Adapter
-    private var isBackgroundChanged = false
-    private var selectedPosition = RecyclerView.NO_POSITION
-    private var fragment: Fragment?= null
     val viewModel: SharedViewmodel by viewModels()
     val premiumServers: List<Countries> by lazy { loadServersvip() }
-    val freeServers: List<Countries> by lazy { loadServers() }
-    private var lastSelectedItem: Countries? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentServerListBinding.inflate(inflater, container, false)
-//        selectedServer = DataItemPremium("Default Server", "10.0.0.5", R.drawable.flag, R.drawable.ic_signal, R.drawable.ic_green_crown)
         return binding?.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-//        setupFreeRecyclerView()
         setupPremiumRecyclerView()
         clicklistner()
         searchview()
         val sharedPrefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val selectedCountryName = sharedPrefs.getString("selectedCountryName", null)
         val selectedCountryFlagUrl = sharedPrefs.getString("selectedCountryFlagUrl", null)
-
         if (selectedCountryName != null && selectedCountryFlagUrl != null) {
             val selectedItem = Countries(selectedCountryName, selectedCountryFlagUrl, "", "", "")
             viewModel.selectedItem.value = selectedItem
         }
-
         binding?.constraintLayout2?.performClick()
     }
 
@@ -90,8 +78,6 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         adapterPREMIUM.submitList(filteredPremiumServers)
 
     }
-
-
     private fun setupPremiumRecyclerView() {
         recyclerView = binding?.recyclerView ?: return
         val premiumServers = loadServersvip()
@@ -116,7 +102,6 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
             editor.putString("selectedpassword", country.getOvpnUserPassword1())
 
         } else {
-            // If no item is selected, clear the saved data
             editor.remove("selectedCountryName")
             editor.remove("selectedCountryFlagUrl")
         }
@@ -144,9 +129,6 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
         }
 
     }
-
-
-
     override fun onItemClick(country: Countries, position: Int) {
         viewModel.selectedItem.value = country
         Log.d("FlagUrlDebug", "FlagUrl to be saved: ${country.getFlagUrl1()}")
@@ -172,5 +154,4 @@ class ServerListFragment : Fragment(), SearchView_Premium_Adapter.OnItemClickLis
             e.printStackTrace()
         }
     }
-
 }

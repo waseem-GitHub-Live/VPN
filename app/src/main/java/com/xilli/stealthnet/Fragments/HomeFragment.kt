@@ -22,7 +22,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.navigation.Navigation
 import androidx.navigation.fragment.findNavController
 import com.airbnb.lottie.LottieDrawable
 import com.bumptech.glide.Glide
@@ -39,6 +38,10 @@ import com.xilli.stealthnet.helper.Utils.isConnected
 import com.xilli.stealthnet.helper.Utils.showMessage
 import com.xilli.stealthnet.model.Countries
 import es.dmoral.toasty.Toasty
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import pub.devrel.easypermissions.EasyPermissions
 import java.util.Objects
 
@@ -80,43 +83,39 @@ class HomeFragment : Fragment(), EasyPermissions.PermissionCallbacks {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionChecker()
         }
-        val countryName = arguments?.getString("countryName")
-        val flagUrl = arguments?.getString("flagUrl")
     }
 
     fun setConnectBtnClickListener() {
         val mainActivity = activity as? MainActivity
         val context = requireContext()
-
         binding?.imageView4?.setOnClickListener {
             if (!Utility.isOnline(context)) {
-                // Handle the case when there is no internet connection
                 noconnectionD()
                 binding?.connect?.text = "Wait"
                 showMessage("Connect to the internet and start again", "error", context)
-
             } else if (selectedCountry != null) {
                 showMessage("VPN is Connecting WAIT", "success", context)
                 binding?.connect?.text = "Authenticating"
-                val intent = VpnService.prepare(context)
-                if (intent != null) {
-                    val VPN_PERMISSION_REQUEST_CODE = 123
-                    startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
-                    binding?.connect?.text = "Disconnect"
-                } else {
-                    val isVpnConnected = mainActivity?.prepareVpn()
-                    if (isVpnConnected == true) {
-                        // VPN is connected
-                        mainActivity?.btnConnectDisconnect()
-                        loadLottieAnimation()
-                        binding?.connect?.text = "Loading...."
-                        binding?.power?.visibility = View.GONE
-                        binding?.lottieAnimationView?.visibility = View.VISIBLE
-
-
+                CoroutineScope(Dispatchers.Main).launch {
+                    val intent = VpnService.prepare(context)
+                    if (intent != null) {
+                        val VPN_PERMISSION_REQUEST_CODE = 123
+                        startActivityForResult(intent, VPN_PERMISSION_REQUEST_CODE)
+                        binding?.connect?.text = "Disconnect"
                     } else {
-                        // VPN connection failed
-                        showMessage("VPN connection failed", "error", context)
+                        val isVpnConnected = withContext(Dispatchers.IO) {
+                            mainActivity?.prepareVpn()
+                        }
+
+                        if (isVpnConnected == true) {
+                            mainActivity?.btnConnectDisconnect()
+                            loadLottieAnimation()
+                            binding?.connect?.text = "Loading...."
+                            binding?.power?.visibility = View.GONE
+                            binding?.lottieAnimationView?.visibility = View.VISIBLE
+                        } else {
+                            showMessage("VPN connection failed", "error", context)
+                        }
                     }
                 }
             } else {
@@ -132,16 +131,15 @@ class HomeFragment : Fragment(), EasyPermissions.PermissionCallbacks {
                 val vpnState = intent.getStringExtra("state")
                 if (vpnState != null) {
                     if (vpnState == "CONNECTED") {
-                        // VPN is connected
-                        Utils.updateUI("connected") // You can update UI accordingly
+                        Utils.updateUI("connected")
                         isConnected = true
                         binding?.connect?.text = "Connected"
 
                         findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToRateScreenFragment())
 
                     } else if (vpnState == "DISCONNECTED") {
-                        // VPN is disconnected
-                        Utils.updateUI("disconnected") // You can update UI accordingly
+
+                        Utils.updateUI("disconnected")
                         isConnected = false
                         binding?.connect?.text = "Disconnected"
                         binding?.power?.visibility = View.VISIBLE
@@ -213,7 +211,6 @@ class HomeFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     }
 
     fun showMessage(msg: String?, type: String, context: Context?) {
-        // Check if context is not null before using it
         context?.let {
             if (type == "success") {
                 if (msg != null) {
@@ -224,7 +221,6 @@ class HomeFragment : Fragment(), EasyPermissions.PermissionCallbacks {
                     Toasty.error(it, msg, Toast.LENGTH_SHORT, true).show()
                 }
             } else {
-                // Handle other types if needed
             }
         }
     }
